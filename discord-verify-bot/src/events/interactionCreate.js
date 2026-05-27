@@ -395,6 +395,13 @@ async function mod_action(interaction, parts) {
 
   if (subAction === 'approve') {
     await interaction.deferUpdate();
+    await interaction.editReply({
+      embeds: [
+        interaction.message.embeds[0],
+        { color: 0xFEE75C, description: '⏳ Processing approval...' },
+      ],
+      components: [components.buildModQueueButtonsDisabled(guildId, userId)],
+    });
     await mod_approve(interaction, guildId, userId, config);
   } else if (subAction === 'reject') {
     await interaction.showModal(components.buildRejectReasonModal(guildId, userId));

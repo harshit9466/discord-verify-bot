@@ -324,6 +324,30 @@ function buildKinksStepButtons(guildId, userId) {
 }
 
 /**
+ * Mod queue buttons — disabled state (shown immediately on approve click to prevent double-click)
+ */
+function buildModQueueButtonsDisabled(guildId, userId) {
+  const approve = new ButtonBuilder()
+    .setCustomId(`verif:mod:approve:${guildId}:${userId}`)
+    .setLabel('⏳ Approving...')
+    .setStyle(ButtonStyle.Success)
+    .setDisabled(true);
+
+  const reject = new ButtonBuilder()
+    .setCustomId(`verif:mod:reject:${guildId}:${userId}`)
+    .setLabel('❌ Reject')
+    .setStyle(ButtonStyle.Danger)
+    .setDisabled(true);
+
+  const viewProfile = new ButtonBuilder()
+    .setURL(`https://discord.com/users/${userId}`)
+    .setLabel('🔎 View Profile')
+    .setStyle(ButtonStyle.Link);
+
+  return new ActionRowBuilder().addComponents(approve, reject, viewProfile);
+}
+
+/**
  * Rejection reason modal — mod "Reject" click karne ke baad reason type karta hai
  */
 function buildRejectReasonModal(guildId, userId) {
@@ -353,6 +377,7 @@ module.exports = {
   buildContentPrefButtons,
   buildOpenIntroButton,
   buildModQueueButtons,
+  buildModQueueButtonsDisabled,
   buildIntroModal,
   buildKinksModal,
   buildKinksStepButtons,
