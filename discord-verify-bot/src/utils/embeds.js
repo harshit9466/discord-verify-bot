@@ -99,12 +99,16 @@ function buildIntroPromptEmbed() {
     .setColor(COLORS.BLURPLE)
     .setTitle('📝 Write Your Introduction')
     .setDescription(
-      `Almost done! Click the button below to open the **introduction form**.\n\n` +
-      `You'll be asked for:\n` +
+      `Almost done! Click the button below to fill out your intro.\n\n` +
+      `**You'll be asked for:**\n` +
       `• Your name or nickname\n` +
       `• Your age\n` +
+      `• Where you're from *(optional)*\n` +
       `• How you found the server\n` +
-      `• A brief intro about yourself`
+      `• A brief intro about yourself\n\n` +
+      `After that, there's a **skippable** form for:\n` +
+      `• Kinks *(optional)*\n` +
+      `• Hard limits *(optional)*`
     )
     .setFooter({ text: 'Step 4 of 4 — A moderator will review your intro' });
 }
@@ -341,7 +345,7 @@ function buildVerifyPanelEmbed(config) {
 }
 
 /**
- * Kinks step prompt embed — Step 4b prompt (optional)
+ * Part 2 prompt embed — location + hard limits (optional)
  * Intro modal submit ke baad dikhta hai
  */
 function buildKinksStepEmbed() {
@@ -349,11 +353,12 @@ function buildKinksStepEmbed() {
     .setColor(COLORS.PINK)
     .setTitle('🔗 Kinks & Hard Limits (Optional)')
     .setDescription(
-      `Almost done! This step is **completely optional**.\n\n` +
-      `You can share your **kinks** and **hard limits** — this helps members understand your interests and boundaries before reaching out.\n\n` +
-      `Hit **Skip** to go straight to submission, or **Add** to fill out the form.`
+      `This step is **completely optional** — both fields can be left blank.\n\n` +
+      `• 🔗 **Kinks** — your interests and turn-ons\n` +
+      `• 🚫 **Hard limits** — things you absolutely won't engage with\n\n` +
+      `Hit **Add Kinks & Limits** to open the form, or **Skip & Submit** to go straight to submission.`
     )
-    .setFooter({ text: 'Step 4b — Optional' });
+    .setFooter({ text: 'Optional — you can skip this' });
 }
 
 /**

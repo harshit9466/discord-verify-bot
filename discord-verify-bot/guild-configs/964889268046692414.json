@@ -33,9 +33,9 @@
   "roleCategories": [
     {
       "name":        "Gender",
-      "description": "Select your gender identity (pick all that apply)",
+      "description": "Select your gender identity (pick one)",
       "minSelect":   1,
-      "maxSelect":   9,
+      "maxSelect":   1,
       "roles": [
         { "id": "964937792637522020", "label": "Sissy",        "emoji": "🎀" },
         { "id": "964940035151499365", "label": "Trans Femme",  "emoji": "🌸" },
@@ -50,9 +50,9 @@
     },
     {
       "name":        "Pronouns",
-      "description": "Select your pronouns (pick all that apply)",
+      "description": "Select your pronouns (pick one)",
       "minSelect":   1,
-      "maxSelect":   4,
+      "maxSelect":   1,
       "roles": [
         { "id": "964944475401105459", "label": "She/Her",   "emoji": "💜" },
         { "id": "964944476298678292", "label": "They/Them", "emoji": "💛" },
@@ -88,9 +88,9 @@
     },
     {
       "name":        "BDSM",
-      "description": "Select your BDSM identity (pick all that apply)",
+      "description": "Select your BDSM identity (pick one)",
       "minSelect":   1,
-      "maxSelect":   4,
+      "maxSelect":   1,
       "roles": [
         { "id": "964940398701187122", "label": "Sub",     "emoji": "🔗" },
         { "id": "964940467592642580", "label": "Switch",  "emoji": "🔄" },
@@ -115,9 +115,9 @@
     },
     {
       "name":        "DM Preference",
-      "description": "How open are you to DMs? (pick all that apply)",
+      "description": "How open are you to DMs? (pick one)",
       "minSelect":   1,
-      "maxSelect":   5,
+      "maxSelect":   1,
       "roles": [
         { "id": "965122716887826453",  "label": "Closed DMs",       "emoji": "🔒" },
         { "id": "1001513519432351845", "label": "Open DMs",         "emoji": "📬" },

@@ -209,16 +209,14 @@ function buildModQueueButtons(guildId, userId) {
 // ============================================================
 
 /**
- * Introduction modal — Step 4a ka popup form (Part 1 of 2)
- * Discord limit: max 5 text inputs per modal
- * Fields: displayName, age, location, howFound, aboutYou
- *
- * Part 2 (kinks/limits) → buildKinksModal()
+ * Introduction modal — Part 1 of 2
+ * Fields: displayName, age, howFound, aboutYou
+ * Kinks + hard limits → separate skippable Part 2 (buildKinksModal)
  */
 function buildIntroModal(guildId, userId) {
   const modal = new ModalBuilder()
     .setCustomId(`verif:modal:intro:${guildId}:${userId}`)
-    .setTitle('Your Introduction (1 of 2)');
+    .setTitle('Your Introduction');
 
   const displayName = new TextInputBuilder()
     .setCustomId('displayName')
@@ -238,21 +236,12 @@ function buildIntroModal(guildId, userId) {
     .setMaxLength(3)
     .setRequired(true);
 
-  const location = new TextInputBuilder()
-    .setCustomId('location')
-    .setLabel('Where are you from?')
-    .setStyle(TextInputStyle.Short)
-    .setPlaceholder('City, Country — e.g. Mumbai, India or just "India"')
-    .setMinLength(2)
-    .setMaxLength(100)
-    .setRequired(false);
-
   const howFound = new TextInputBuilder()
     .setCustomId('howFound')
     .setLabel('How did you find our server?')
     .setStyle(TextInputStyle.Short)
     .setPlaceholder('Friend, Reddit, Google, Twitter, etc.')
-    .setMinLength(10)
+    .setMinLength(2)
     .setMaxLength(200)
     .setRequired(true);
 
@@ -260,10 +249,18 @@ function buildIntroModal(guildId, userId) {
     .setCustomId('aboutYou')
     .setLabel('Tell us about yourself')
     .setStyle(TextInputStyle.Paragraph)
-    .setPlaceholder('Your interests, hobbies, what brings you here... (at least 50 characters)')
-    .setMinLength(50)
+    .setPlaceholder('Your interests, hobbies, what brings you here...')
+    .setMinLength(10)
     .setMaxLength(1000)
     .setRequired(true);
+
+  const location = new TextInputBuilder()
+    .setCustomId('location')
+    .setLabel('Where are you from? (optional)')
+    .setStyle(TextInputStyle.Short)
+    .setPlaceholder('City, Country — e.g. Mumbai, India or just "India"')
+    .setMaxLength(100)
+    .setRequired(false);
 
   modal.addComponents(
     new ActionRowBuilder().addComponents(displayName),
@@ -277,13 +274,13 @@ function buildIntroModal(guildId, userId) {
 }
 
 /**
- * Kinks & Hard Limits modal — Step 4b (Part 2 of 2, OPTIONAL)
- * User ke paas "Skip" option bhi hota hai buildKinksStepButtons() se
+ * Kinks & Hard Limits modal — skippable Part 2
+ * Both fields optional — user can submit blank
  */
 function buildKinksModal(guildId, userId) {
   const modal = new ModalBuilder()
     .setCustomId(`verif:modal:kinks:${guildId}:${userId}`)
-    .setTitle('Kinks & Limits (Optional)');
+    .setTitle('Kinks & Hard Limits (Optional)');
 
   const kinks = new TextInputBuilder()
     .setCustomId('kinks')
@@ -310,8 +307,7 @@ function buildKinksModal(guildId, userId) {
 }
 
 /**
- * Kinks step buttons — Step 4b prompt ke saath aate hain
- * User ya toh kinks form fill kar sakta hai ya skip kar sakta hai
+ * Kinks step buttons — skippable optional form after intro submission
  */
 function buildKinksStepButtons(guildId, userId) {
   const add = new ButtonBuilder()
@@ -321,7 +317,7 @@ function buildKinksStepButtons(guildId, userId) {
 
   const skip = new ButtonBuilder()
     .setCustomId(`verif:kinks:skip:${guildId}:${userId}`)
-    .setLabel('⏩ Skip This Step')
+    .setLabel('⏩ Skip & Submit')
     .setStyle(ButtonStyle.Primary);
 
   return new ActionRowBuilder().addComponents(add, skip);
