@@ -1,0 +1,226 @@
+{
+  "main": {
+    "id": "fd0a2541cdd8a181",
+    "type": "split",
+    "children": [
+      {
+        "id": "6ba6789f0d423b61",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "44c0a936c7eae4f0",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Discord-Verification-Overhaul-Plan.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Discord-Verification-Overhaul-Plan"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "71845705e0b6857d",
+    "type": "split",
+    "children": [
+      {
+        "id": "09616afae525c774",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "4971e79819ea8b71",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "73f60b6b946200fe",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "514335f8249e97fa",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "right": {
+    "id": "34198b00439a0e87",
+    "type": "split",
+    "children": [
+      {
+        "id": "443164ffdab0135b",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "6fe5982979bc0291",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "Discord-Verification-Overhaul-Plan.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for Discord-Verification-Overhaul-Plan"
+            }
+          },
+          {
+            "id": "2efbd067c1c7cb8c",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "Discord-Verification-Overhaul-Plan.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from Discord-Verification-Overhaul-Plan"
+            }
+          },
+          {
+            "id": "5f0badcdcc318a50",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "85eb404e79c49223",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "78085ccfb6aa0da4",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "Discord-Verification-Overhaul-Plan.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of Discord-Verification-Overhaul-Plan"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "44c0a936c7eae4f0",
+  "lastOpenFiles": [
+    "discord-verify-bot/node_modules/@discordjs/rest/node_modules/@sapphire/snowflake/dist/cjs/index.d.cts",
+    "discord-verify-bot/node_modules/@discordjs/rest/node_modules/@sapphire/snowflake/dist/iife/index.global.js.map",
+    "discord-verify-bot/node_modules/@discordjs/rest/node_modules/@sapphire/snowflake/dist/esm/index.mjs",
+    "discord-verify-bot/node_modules/@discordjs/rest/node_modules/@sapphire/snowflake/dist/iife/index.global.js",
+    "discord-verify-bot/node_modules/@discordjs/rest/node_modules/@sapphire/snowflake/dist/cjs/index.cjs.map",
+    "discord-verify-bot/node_modules/@discordjs/rest/node_modules/@sapphire/snowflake/dist/esm/index.mjs.map",
+    "discord-verify-bot/node_modules/@discordjs/rest/node_modules/@sapphire/snowflake/dist/cjs/index.cjs",
+    "discord-verify-bot/node_modules/@discordjs/rest/node_modules/@sapphire/snowflake/dist/esm/index.d.mts",
+    "discord-verify-bot/node_modules/@discordjs/rest/node_modules/@sapphire/snowflake/dist/iife",
+    "discord-verify-bot/node_modules/@discordjs/rest/node_modules/@sapphire/snowflake/dist/esm",
+    "discord-verify-bot/node_modules/@discordjs/rest/node_modules/@sapphire/snowflake/dist/cjs",
+    "discord-verify-bot/node_modules/@discordjs/ws/node_modules/@types/ws/README.md",
+    "discord-verify-bot/node_modules/@discordjs/ws/node_modules/ws/README.md",
+    "discord-verify-bot/node_modules/@discordjs/ws/node_modules/@sapphire/async-queue/README.md",
+    "discord-verify-bot/node_modules/@discordjs/ws/node_modules/@sapphire/async-queue/CHANGELOG.md",
+    "discord-verify-bot/node_modules/@discordjs/rest/node_modules/@sapphire/async-queue/README.md",
+    "discord-verify-bot/node_modules/@discordjs/rest/node_modules/@sapphire/async-queue/CHANGELOG.md",
+    "discord-verify-bot/node_modules/anymatch/node_modules/picomatch/README.md",
+    "discord-verify-bot/node_modules/glob-parent/node_modules/is-glob/README.md",
+    "discord-verify-bot/node_modules/undici/types/README.md",
+    "discord-verify-bot/node_modules/undici/docs/docs/api/WebSocket.md",
+    "discord-verify-bot/node_modules/undici/docs/docs/api/PoolStats.md",
+    "discord-verify-bot/node_modules/undici/docs/docs/api/Util.md",
+    "discord-verify-bot/node_modules/undici/docs/docs/api/Pool.md",
+    "discord-verify-bot/node_modules/undici/docs/docs/api/RetryAgent.md",
+    "discord-verify-bot/node_modules/undici/docs/docs/api/RetryHandler.md",
+    "discord-verify-bot/node_modules/undici/docs/docs/api/RedirectHandler.md",
+    "discord-verify-bot/node_modules/undici/docs/docs/api/ProxyAgent.md",
+    "discord-verify-bot/node_modules/undici/docs/docs/api/MockPool.md",
+    "discord-verify-bot/node_modules/undici/docs/docs/api/Errors.md",
+    "discord-verify-bot/node_modules/undici/docs/docs/api/MockAgent.md",
+    "discord-verify-bot/node_modules/undici/docs/docs/api/Fetch.md",
+    "discord-verify-bot/node_modules/undici/docs/docs/api/MockErrors.md",
+    "discord-verify-bot/node_modules/undici/docs/docs/api/MockClient.md",
+    "discord-verify-bot/node_modules/undici/docs/docs/api/EventSource.md",
+    "discord-verify-bot/node_modules/undici/docs/docs/api/Debug.md"
+  ]
+}

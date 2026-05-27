@@ -1,0 +1,65 @@
+{
+  "_comment": "HOW TO USE: Copy this file, rename it to YOUR_GUILD_ID.json (e.g. 964889268046692414.json), fill in all IDs. Enable Developer Mode in Discord (Settings → Advanced → Developer Mode) to right-click and Copy IDs.",
+
+  "guildId": "YOUR_GUILD_ID_HERE",
+  "guildName": "Your Server Name",
+
+  "channels": {
+    "welcomeChannelId": "ID_OF_YOUR_WELCOME_CHANNEL",
+    "modQueueChannelId": "ID_OF_YOUR_PRIVATE_MOD_QUEUE_CHANNEL",
+    "logChannelId": "ID_OF_YOUR_PRIVATE_VERIFICATION_LOG_CHANNEL",
+    "accountClaimChannelId": "ID_OF_YOUR_ACCOUNT_CLAIM_CHANNEL"
+  },
+
+  "roles": {
+    "unverifiedRoleId": "ID_OF_UNVERIFIED_ROLE",
+    "travelerRoleId": "ID_OF_TRAVELER_ROLE",
+    "initiateRoleId": "ID_OF_INITIATE_ROLE",
+    "jailedRoleId": "ID_OF_JAILED_ROLE",
+    "verificationPendingRoleId": "ID_OF_VERIFICATION_PENDING_ROLE"
+  },
+
+  "settings": {
+    "nsfwEnabled": true,
+    "verificationTimeoutHours": 24,
+    "introMinLength": 30,
+    "introMaxLength": 500,
+    "requireRoleSelection": true,
+    "sendDmOnJoin": true
+  },
+
+  "roleCategories": [
+    {
+      "name": "Interests",
+      "description": "Pick your interests (select at least 1)",
+      "minSelect": 1,
+      "maxSelect": 5,
+      "roles": [
+        { "id": "ROLE_ID", "label": "Gaming",  "emoji": "🎮", "description": "Video games, board games" },
+        { "id": "ROLE_ID", "label": "Anime",   "emoji": "⛩️", "description": "Anime and manga" },
+        { "id": "ROLE_ID", "label": "Music",   "emoji": "🎵", "description": "Music lovers" },
+        { "id": "ROLE_ID", "label": "Art",     "emoji": "🎨", "description": "Digital and traditional art" },
+        { "id": "ROLE_ID", "label": "Tech",    "emoji": "💻", "description": "Technology and coding" }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "description": "Choose what pings you want (select at least 1)",
+      "minSelect": 1,
+      "maxSelect": 3,
+      "roles": [
+        { "id": "ROLE_ID", "label": "Announcements", "emoji": "📢", "description": "Server announcements" },
+        { "id": "ROLE_ID", "label": "Events",        "emoji": "🎉", "description": "Server events" },
+        { "id": "ROLE_ID", "label": "Polls",         "emoji": "📊", "description": "Server polls" }
+      ]
+    }
+  ],
+
+  "messages": {
+    "welcomeTitle": "Welcome to {serverName}! 👋",
+    "welcomeDescription": "We're glad you're here!\n\nBefore you can access the server, complete a quick **2-minute verification**. This keeps our community safe and quality.\n\nClick below to begin!",
+    "rulesTitle": "📜 Server Rules",
+    "rulesText": "1. Be respectful to all members\n2. No spamming or self-promotion\n3. Follow Discord's Terms of Service\n4. No harassment or hate speech\n5. Keep content in appropriate channels\n\nBy clicking **I Agree**, you confirm you've read and will follow these rules.",
+    "dmFailedMessage": "Hey {username}! Please enable DMs from server members so I can guide you through verification, then click the button in <#{welcomeChannelId}>!"
+  }
+}

@@ -1,0 +1,13 @@
+# Environment variables — NEVER commit this
+.env
+
+# Dependencies — too large to commit
+node_modules/
+
+# Logs — generated at runtime
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
