@@ -558,6 +558,11 @@ async function showContentPreference(interaction, guildId, userId, config) {
 }
 
 async function postToModQueue(interaction, guildId, userId, state) {
+  if (state?.modMessageId) {
+    logger.warn(`Duplicate mod queue blocked for ${userId} — already queued`);
+    return;
+  }
+
   const guild  = interaction.client.guilds.cache.get(guildId);
   const config = getGuildConfig(guildId);
   if (!guild || !config) return;
