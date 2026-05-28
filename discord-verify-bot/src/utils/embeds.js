@@ -184,6 +184,14 @@ function buildModQueueEmbed(member, state, config) {
   const accountAgeDays = Math.floor((Date.now() - member.user.createdTimestamp) / 86400000);
   const ageWarning = accountAgeDays < 30 ? '\n⚠️ **Account less than 30 days old**' : '';
 
+  // Personal profile block — Name, Age, Location, Content Pref in one scannable field
+  const profileLines = [
+    `**Name:** ${intro?.displayName || '_Not provided_'}`,
+    `**Age:** ${intro?.age || '_Not provided_'}`,
+    intro?.location ? `**Location:** ${intro.location}` : null,
+    `**Content:** ${prefLabel}`,
+  ].filter(Boolean).join('\n');
+
   const embed = new EmbedBuilder()
     .setColor(COLORS.YELLOW)
     .setTitle('📋 New Verification Request')
@@ -192,14 +200,8 @@ function buildModQueueEmbed(member, state, config) {
       { name: '👤 User',            value: `${member.user.tag}\n<@${member.id}>\nID: \`${member.id}\`${ageWarning}`, inline: true },
       { name: '📅 Joined Server',   value: `<t:${Math.floor(member.joinedTimestamp / 1000)}:R>`, inline: true },
       { name: '🎂 Account Created', value: `<t:${Math.floor(member.user.createdTimestamp / 1000)}:R> (${accountAgeDays}d ago)`, inline: true },
-      { name: '📛 Preferred Name',  value: intro?.displayName || '_Not provided_', inline: true },
-      { name: '🔢 Age',             value: intro?.age          || '_Not provided_', inline: true },
-      { name: '🔞 Content Pref',    value: prefLabel,                               inline: true },
+      { name: '👤 Profile',         value: profileLines },
     );
-
-  if (intro?.location) {
-    embed.addFields({ name: '📍 Location', value: intro.location, inline: true });
-  }
 
   embed.addFields(
     { name: '🔍 How They Found Us', value: intro?.howFound || '_Not provided_' },
@@ -257,8 +259,8 @@ function buildPublicIntroEmbed(member, state, config) {
     ? '🌗 SFW + NSFW'
     : '🌞 SFW Only';
 
-  // ---- All role categories — same logic as mod queue, fully dynamic ----
-  const roleCategoryFields = config.roleCategories
+  // ---- All role categories → one compact block (bold category name + values per line) ----
+  const roleLines = config.roleCategories
     .map((cat, i) => {
       const ids = selectedRoles?.[i] || [];
       if (!ids.length) return null;
@@ -269,9 +271,10 @@ function buildPublicIntroEmbed(member, state, config) {
         })
         .filter(Boolean)
         .join(', ');
-      return labels ? { name: `🏷️ ${cat.name}`, value: labels, inline: true } : null;
+      return labels ? `**${cat.name}:** ${labels}` : null;
     })
-    .filter(Boolean);
+    .filter(Boolean)
+    .join('\n');
 
   // ---- Build embed ----
   const displayName = intro?.displayName || member.user.displayName;
@@ -296,14 +299,14 @@ function buildPublicIntroEmbed(member, state, config) {
   }
   embed.addFields({ name: '🔒 Access', value: badge, inline: true });
 
-  // All selected role categories (Gender, Pronouns, etc. — whatever config defines)
-  if (roleCategoryFields.length) {
-    embed.addFields(...roleCategoryFields);
+  // Role categories block — full width, easy to scan
+  if (roleLines) {
+    embed.addFields({ name: '🏷️ Roles', value: roleLines });
   }
 
   // How they found us
   if (intro?.howFound) {
-    embed.addFields({ name: '🔍 How I Found Here', value: intro.howFound, inline: true });
+    embed.addFields({ name: '🔍 How I Found Here', value: intro.howFound });
   }
 
   // Kinks & Hard Limits — only show if user provided them (optional step)
