@@ -60,7 +60,14 @@ async function initDb() {
       CREATE INDEX IF NOT EXISTS idx_events_type    ON events(event_type);
     `);
 
-    // Additive migrations — safe to run every time (IF NOT EXISTS / IF NOT EXISTS logic)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS guild_settings (
+        guild_id VARCHAR(20) PRIMARY KEY,
+        settings JSONB       NOT NULL DEFAULT '{}'
+      );
+    `);
+
+    // Additive column migrations — safe to run every time
     await client.query(`
       ALTER TABLE members ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMPTZ;
     `);

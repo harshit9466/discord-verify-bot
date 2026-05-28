@@ -73,12 +73,27 @@ for (const file of eventFiles) {
 const { getAllConfiguredGuilds, getGuildConfig } = require('./config/configManager');
 const statsRepo  = require('./db/statsRepository');
 const modSubRepo = require('./db/modSubscriberRepository');
-const memberRepo = require('./db/memberRepository');
-const eventRepo  = require('./db/eventRepository');
-const embeds     = require('./utils/embeds');
-const components = require('./utils/components');
+const memberRepo   = require('./db/memberRepository');
+const eventRepo    = require('./db/eventRepository');
+const settingsRepo = require('./db/settingsRepository');
+const embeds       = require('./utils/embeds');
+const components   = require('./utils/components');
 
-client.once('ready', () => {
+client.once('ready', async () => {
+  // Load persisted settings from DB into in-memory config cache
+  // so the scheduled job always has up-to-date settings after a redeploy
+  for (const guildId of getAllConfiguredGuilds()) {
+    try {
+      const dbSettings = await settingsRepo.getVerifSettings(guildId);
+      if (dbSettings) {
+        const config = getGuildConfig(guildId);
+        if (config) config.verificationSettings = dbSettings;
+        logger.info(`Loaded persisted verif settings for guild ${guildId}`);
+      }
+    } catch (err) {
+      logger.warn(`Could not load DB settings for guild ${guildId}: ${err.message}`);
+    }
+  }
 
   // --- Job 1: Mod panel auto-refresh (every 1 hour) ---
   setInterval(async () => {

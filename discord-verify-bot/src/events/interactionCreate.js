@@ -10,8 +10,9 @@ const embeds      = require('../utils/embeds');
 const components  = require('../utils/components');
 const memberRepo  = require('../db/memberRepository');
 const eventRepo   = require('../db/eventRepository');
-const modSubRepo  = require('../db/modSubscriberRepository');
-const statsRepo   = require('../db/statsRepository');
+const modSubRepo    = require('../db/modSubscriberRepository');
+const statsRepo     = require('../db/statsRepository');
+const settingsRepo  = require('../db/settingsRepository');
 
 module.exports = {
   name: 'interactionCreate',
@@ -730,8 +731,10 @@ async function panel_toggleNotify(interaction, guildId) {
 }
 
 async function panel_showSettings(interaction, guildId) {
-  const config   = getGuildConfig(guildId);
-  const settings = config?.verificationSettings || {};
+  const config     = getGuildConfig(guildId);
+  // DB is source of truth — falls back to JSON defaults if no DB row yet
+  const dbSettings = await settingsRepo.getVerifSettings(guildId).catch(() => null);
+  const settings   = dbSettings ?? config?.verificationSettings ?? {};
   await interaction.reply({
     embeds:     [embeds.buildVerifSettingsEmbed(settings)],
     components: [components.buildVerifSettingsComponents(guildId, settings)],
@@ -740,10 +743,13 @@ async function panel_showSettings(interaction, guildId) {
 }
 
 async function panel_toggleSetting(interaction, guildId, key) {
-  const config  = getGuildConfig(guildId);
-  const current = config?.verificationSettings || {};
-  const updated = { ...current, [key]: !current[key] };
-  saveGuildConfig(guildId, { verificationSettings: updated });
+  const config     = getGuildConfig(guildId);
+  const dbSettings = await settingsRepo.getVerifSettings(guildId).catch(() => null);
+  const current    = dbSettings ?? config?.verificationSettings ?? {};
+  const updated    = { ...current, [key]: !current[key] };
+  await settingsRepo.saveVerifSettings(guildId, updated);
+  // Keep in-memory cache in sync so scheduled job picks up changes immediately
+  if (config) config.verificationSettings = updated;
   await interaction.update({
     embeds:     [embeds.buildVerifSettingsEmbed(updated)],
     components: [components.buildVerifSettingsComponents(guildId, updated)],
@@ -751,8 +757,10 @@ async function panel_toggleSetting(interaction, guildId, key) {
 }
 
 async function panel_editSettings(interaction, guildId) {
-  const config = getGuildConfig(guildId);
-  await interaction.showModal(components.buildVerifSettingsModal(guildId, config?.verificationSettings));
+  const config     = getGuildConfig(guildId);
+  const dbSettings = await settingsRepo.getVerifSettings(guildId).catch(() => null);
+  const settings   = dbSettings ?? config?.verificationSettings;
+  await interaction.showModal(components.buildVerifSettingsModal(guildId, settings));
 }
 
 async function modal_saveVerifSettings(interaction, parts) {
@@ -771,15 +779,17 @@ async function modal_saveVerifSettings(interaction, parts) {
     return interaction.reply({ content: '❌ Invalid hours — enter a positive number (minimum 1).', flags: MessageFlags.Ephemeral });
   }
 
-  const config  = getGuildConfig(guildId);
-  const current = config?.verificationSettings || {};
-  const updated = {
+  const config     = getGuildConfig(guildId);
+  const dbSettings = await settingsRepo.getVerifSettings(guildId).catch(() => null);
+  const current    = dbSettings ?? config?.verificationSettings ?? {};
+  const updated    = {
     ...current,
     reminderHours:  reminderHoursRaw,
     autoKickHours:  autoKickHoursRaw,
     kickInviteLink: inviteLink,
   };
-  saveGuildConfig(guildId, { verificationSettings: updated });
+  await settingsRepo.saveVerifSettings(guildId, updated);
+  if (config) config.verificationSettings = updated;
 
   await interaction.reply({
     embeds:     [embeds.buildVerifSettingsEmbed(updated)],
