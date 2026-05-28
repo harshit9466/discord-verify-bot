@@ -69,6 +69,45 @@ for (const file of eventFiles) {
   logger.debug(`Event handler loaded: ${event.name}`);
 }
 
+// ---- Auto-refresh mod panel every hour ----
+const { getAllConfiguredGuilds, getGuildConfig } = require('./config/configManager');
+const statsRepo  = require('./db/statsRepository');
+const modSubRepo = require('./db/modSubscriberRepository');
+const embeds     = require('./utils/embeds');
+const components = require('./utils/components');
+
+client.once('ready', () => {
+  setInterval(async () => {
+    for (const guildId of getAllConfiguredGuilds()) {
+      const config = getGuildConfig(guildId);
+      if (!config?.panelMessageId || !config?.panelChannelId) continue;
+
+      try {
+        const guild   = client.guilds.cache.get(guildId);
+        const channel = guild?.channels.cache.get(config.panelChannelId);
+        if (!channel) continue;
+
+        const msg = await channel.messages.fetch(config.panelMessageId).catch(() => null);
+        if (!msg) continue;
+
+        const [stats, subscriberCount] = await Promise.all([
+          statsRepo.getStats(guildId, 7),
+          modSubRepo.getEnabledCount(guildId),
+        ]);
+
+        await msg.edit({
+          embeds:     [embeds.buildModPanelEmbed(stats, subscriberCount)],
+          components: [components.buildModPanelComponents(guildId)],
+        });
+
+        logger.info(`Mod panel auto-refreshed for guild ${guildId}`);
+      } catch (err) {
+        logger.error(`Auto-refresh failed for guild ${guildId}:`, { error: err.message });
+      }
+    }
+  }, 60 * 60 * 1000);
+});
+
 // ---- Init DB, then login ----
 const { initDb } = require('./db/connection');
 

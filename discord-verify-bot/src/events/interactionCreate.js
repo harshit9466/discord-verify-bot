@@ -4,7 +4,7 @@
 
 const { MessageFlags } = require('discord.js');
 const logger = require('../utils/logger');
-const { getGuildConfig } = require('../config/configManager');
+const { getGuildConfig, saveGuildConfig } = require('../config/configManager');
 const { getState, initState, updateState, clearState, STEPS } = require('../utils/stateManager');
 const embeds      = require('../utils/embeds');
 const components  = require('../utils/components');
@@ -415,6 +415,10 @@ async function mod_approve(interaction, guildId, userId, config) {
   const guild = interaction.client.guilds.cache.get(guildId);
   if (!guild) return interaction.editReply({ content: 'Guild not found.' });
 
+  // Capture before any async ops — interaction.message may become stale mid-flow
+  const modQueueChannelId = interaction.message.channelId;
+  const modQueueMessageId = interaction.message.id;
+
   try {
     const member = await guild.members.fetch(userId);
     const state  = getState(guildId, userId);
@@ -484,7 +488,15 @@ async function mod_approve(interaction, guildId, userId, config) {
     }
 
     // Delete from mod queue + post to verified log channel
-    await interaction.message.delete().catch(() => {});
+    try {
+      const modQueueCh = guild.channels.cache.get(modQueueChannelId);
+      if (modQueueCh) {
+        const msgToDelete = await modQueueCh.messages.fetch(modQueueMessageId).catch(() => null);
+        if (msgToDelete) await msgToDelete.delete();
+      }
+    } catch (err) {
+      logger.warn('Could not delete mod queue message: ' + err.message);
+    }
     const verifiedLogChannel = guild.channels.cache.get(config.channels.verifiedLogChannelId);
     if (verifiedLogChannel) {
       await verifiedLogChannel.send({
@@ -530,6 +542,9 @@ async function mod_rejectReason(interaction, parts) {
   const guild = interaction.client.guilds.cache.get(guildId);
   if (!guild) return interaction.reply({ content: 'Guild not found.', flags: MessageFlags.Ephemeral });
 
+  const modQueueChannelId = interaction.message.channelId;
+  const modQueueMessageId = interaction.message.id;
+
   await interaction.deferUpdate();
 
   try {
@@ -541,8 +556,16 @@ async function mod_rejectReason(interaction, parts) {
     if (pendingRole) await member.roles.remove(pendingRole).catch(() => {});
 
     // Delete from mod queue + post to rejected log channel
-    await interaction.message.delete().catch(() => {});
-    const rejectedLogChannel = guild.channels.cache.get(config.channels.rejectedLogChannelId);
+    try {
+      const modQueueCh = guild.channels.cache.get(modQueueChannelId);
+      if (modQueueCh) {
+        const msgToDelete = await modQueueCh.messages.fetch(modQueueMessageId).catch(() => null);
+        if (msgToDelete) await msgToDelete.delete();
+      }
+    } catch (err) {
+      logger.warn('Could not delete mod queue message: ' + err.message);
+    }
+    const rejectedLogChannel  = guild.channels.cache.get(config.channels.rejectedLogChannelId);
     if (rejectedLogChannel) {
       await rejectedLogChannel.send({
         embeds: [embeds.buildRejectedLogEmbed(member, interaction.user, reason)],
@@ -772,6 +795,12 @@ async function cmd_setupModPanel(interaction) {
     });
 
     await panelMsg.pin().catch(() => logger.warn('Could not pin mod panel — pin it manually'));
+
+    saveGuildConfig(interaction.guildId, {
+      panelMessageId: panelMsg.id,
+      panelChannelId: interaction.channelId,
+    });
+
     await interaction.editReply({ content: '✅ Mod panel posted and pinned in this channel!' });
     logger.info('/setup-mod-panel run by ' + interaction.user.tag);
   } catch (err) {

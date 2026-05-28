@@ -67,4 +67,22 @@ function getAllConfiguredGuilds() {
     .map(f => f.replace('.json', ''));
 }
 
-module.exports = { getGuildConfig, reloadGuildConfig, getAllConfiguredGuilds };
+/**
+ * Top-level keys ko config file mein save karta hai (e.g. panelMessageId)
+ * Existing nested objects (channels, roles, etc.) preserved rehte hain
+ */
+function saveGuildConfig(guildId, updates) {
+  const filePath = path.join(CONFIG_DIR, `${guildId}.json`);
+
+  let current = {};
+  if (fs.existsSync(filePath)) {
+    try { current = JSON.parse(fs.readFileSync(filePath, 'utf-8')); } catch (_) {}
+  }
+
+  const updated = { ...current, ...updates };
+  fs.writeFileSync(filePath, JSON.stringify(updated, null, 2), 'utf-8');
+  configCache.set(guildId, updated);
+  return updated;
+}
+
+module.exports = { getGuildConfig, reloadGuildConfig, getAllConfiguredGuilds, saveGuildConfig };
