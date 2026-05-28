@@ -498,6 +498,58 @@ function buildNotifyToggleButton(guildId, isCurrentlyOn) {
   return new ActionRowBuilder().addComponents(btn);
 }
 
+/**
+ * Edit config modal — welcome title/desc + rules title/text
+ * Pre-filled with current values from in-memory config
+ */
+function buildEditConfigModal(guildId, config) {
+  const m = config?.messages || {};
+  const modal = new ModalBuilder()
+    .setCustomId(`verif:modal:editConfig:${guildId}`)
+    .setTitle('Edit Server Config');
+
+  modal.addComponents(
+    new ActionRowBuilder().addComponents(
+      new TextInputBuilder()
+        .setCustomId('welcomeTitle')
+        .setLabel('Welcome Title')
+        .setStyle(TextInputStyle.Short)
+        .setValue((m.welcomeTitle || '').slice(0, 100))
+        .setMaxLength(100)
+        .setRequired(true),
+    ),
+    new ActionRowBuilder().addComponents(
+      new TextInputBuilder()
+        .setCustomId('welcomeDescription')
+        .setLabel('Welcome Description')
+        .setStyle(TextInputStyle.Paragraph)
+        .setValue((m.welcomeDescription || '').slice(0, 1000))
+        .setMaxLength(1000)
+        .setRequired(true),
+    ),
+    new ActionRowBuilder().addComponents(
+      new TextInputBuilder()
+        .setCustomId('rulesTitle')
+        .setLabel('Rules Title')
+        .setStyle(TextInputStyle.Short)
+        .setValue((m.rulesTitle || '').slice(0, 100))
+        .setMaxLength(100)
+        .setRequired(true),
+    ),
+    new ActionRowBuilder().addComponents(
+      new TextInputBuilder()
+        .setCustomId('rulesText')
+        .setLabel('Rules Text')
+        .setStyle(TextInputStyle.Paragraph)
+        .setValue((m.rulesText || '').slice(0, 1000))
+        .setMaxLength(1000)
+        .setRequired(true),
+    ),
+  );
+
+  return modal;
+}
+
 module.exports = {
   buildBeginButton,
   buildPersistentVerifyButton,
@@ -516,4 +568,5 @@ module.exports = {
   buildNotifyToggleButton,
   buildVerifSettingsComponents,
   buildVerifSettingsModal,
+  buildEditConfigModal,
 };

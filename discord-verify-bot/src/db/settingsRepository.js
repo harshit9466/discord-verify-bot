@@ -16,4 +16,20 @@ async function saveVerifSettings(guildId, verifSettings) {
   `, [guildId, JSON.stringify(verifSettings)]);
 }
 
-module.exports = { getVerifSettings, saveVerifSettings };
+async function getConfigOverrides(guildId) {
+  const { rows } = await pool.query(
+    'SELECT config_overrides FROM guild_settings WHERE guild_id = $1',
+    [guildId]
+  );
+  return rows[0]?.config_overrides ?? null;
+}
+
+async function saveConfigOverrides(guildId, overrides) {
+  await pool.query(`
+    INSERT INTO guild_settings (guild_id, config_overrides)
+    VALUES ($1, $2::jsonb)
+    ON CONFLICT (guild_id) DO UPDATE SET config_overrides = EXCLUDED.config_overrides
+  `, [guildId, JSON.stringify(overrides)]);
+}
+
+module.exports = { getVerifSettings, saveVerifSettings, getConfigOverrides, saveConfigOverrides };

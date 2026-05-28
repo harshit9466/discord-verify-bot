@@ -85,4 +85,21 @@ function saveGuildConfig(guildId, updates) {
   return updated;
 }
 
-module.exports = { getGuildConfig, reloadGuildConfig, getAllConfiguredGuilds, saveGuildConfig };
+/**
+ * DB se aaye config overrides ko in-memory cache mein apply karta hai.
+ * Welcome/rules messages ko override karta hai bina JSON file touch kiye.
+ */
+function applyConfigOverrides(guildId, overrides) {
+  if (!overrides) return;
+  const config = configCache.get(guildId);
+  if (!config) return;
+  if (!config.messages) config.messages = {};
+  const fields = ['welcomeTitle', 'welcomeDescription', 'rulesTitle', 'rulesText'];
+  for (const field of fields) {
+    if (overrides[field] !== undefined && overrides[field] !== '') {
+      config.messages[field] = overrides[field];
+    }
+  }
+}
+
+module.exports = { getGuildConfig, reloadGuildConfig, getAllConfiguredGuilds, saveGuildConfig, applyConfigOverrides };

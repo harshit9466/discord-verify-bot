@@ -50,6 +50,12 @@ const commands = [
     .setDescription('Post the mod panel (stats + notifications) in this channel (Admin only)')
     .setDefaultMemberPermissions('8'),
 
+  // /edit-config — Welcome/rules messages edit karo (DB mein store hota hai)
+  new SlashCommandBuilder()
+    .setName('edit-config')
+    .setDescription('Edit welcome and rules messages shown to new members (Admin only)')
+    .setDefaultMemberPermissions('8'),
+
 ].map(cmd => cmd.toJSON());
 
 // ---- Register commands with Discord API ----

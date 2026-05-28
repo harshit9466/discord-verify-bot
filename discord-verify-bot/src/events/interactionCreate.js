@@ -4,7 +4,7 @@
 
 const { MessageFlags } = require('discord.js');
 const logger = require('../utils/logger');
-const { getGuildConfig, saveGuildConfig } = require('../config/configManager');
+const { getGuildConfig, saveGuildConfig, applyConfigOverrides } = require('../config/configManager');
 const { getState, initState, updateState, clearState, STEPS } = require('../utils/stateManager');
 const embeds      = require('../utils/embeds');
 const components  = require('../utils/components');
@@ -71,6 +71,7 @@ async function handleModalSubmit(interaction, parts) {
   else if (parts[1] === 'modal' && parts[2] === 'kinks')         await step_kinksSubmit(interaction, parts);
   else if (parts[1] === 'mod'   && parts[2] === 'rejectReason')  await mod_rejectReason(interaction, parts);
   else if (parts[1] === 'modal' && parts[2] === 'verifSettings') await modal_saveVerifSettings(interaction, parts);
+  else if (parts[1] === 'modal' && parts[2] === 'editConfig')    await modal_saveConfig(interaction, parts);
 }
 
 // ============================================================
@@ -842,6 +843,7 @@ async function handleSlashCommand(interaction) {
   if      (cmd === 'ping')            await cmd_ping(interaction);
   else if (cmd === 'setup-verify')    await cmd_setupVerify(interaction);
   else if (cmd === 'setup-mod-panel') await cmd_setupModPanel(interaction);
+  else if (cmd === 'edit-config')     await cmd_editConfig(interaction);
   else if (cmd === 'reload-config')   await cmd_reloadConfig(interaction);
   else if (cmd === 'verify-me')       await cmd_verifyMe(interaction);
   else await interaction.reply({ content: 'Unknown command: /' + cmd, flags: MessageFlags.Ephemeral });
@@ -919,6 +921,50 @@ async function cmd_setupModPanel(interaction) {
     logger.error('/setup-mod-panel failed:', { error: err.message });
     await interaction.editReply({ content: 'Failed: ' + err.message });
   }
+}
+
+async function cmd_editConfig(interaction) {
+  if (!interaction.member?.permissions.has('Administrator')) {
+    return interaction.reply({ content: 'Administrator permission required.', flags: MessageFlags.Ephemeral });
+  }
+  const config = getGuildConfig(interaction.guildId);
+  if (!config) {
+    return interaction.reply({ content: 'Guild config not found.', flags: MessageFlags.Ephemeral });
+  }
+  await interaction.showModal(components.buildEditConfigModal(interaction.guildId, config));
+}
+
+async function modal_saveConfig(interaction, parts) {
+  const guildId = parts[3];
+
+  if (!interaction.member?.permissions.has('Administrator')) {
+    return interaction.reply({ content: 'Administrator permission required.', flags: MessageFlags.Ephemeral });
+  }
+
+  const overrides = {
+    welcomeTitle:       interaction.fields.getTextInputValue('welcomeTitle').trim(),
+    welcomeDescription: interaction.fields.getTextInputValue('welcomeDescription').trim(),
+    rulesTitle:         interaction.fields.getTextInputValue('rulesTitle').trim(),
+    rulesText:          interaction.fields.getTextInputValue('rulesText').trim(),
+  };
+
+  await settingsRepo.saveConfigOverrides(guildId, overrides);
+  applyConfigOverrides(guildId, overrides);
+
+  await interaction.reply({
+    embeds: [{
+      color:       0x57F287,
+      title:       '✅ Config Updated',
+      description: 'Welcome message and rules text updated successfully. Changes are live immediately.',
+      fields: [
+        { name: 'Welcome Title',    value: overrides.welcomeTitle,   inline: false },
+        { name: 'Rules Title',      value: overrides.rulesTitle,     inline: false },
+      ],
+    }],
+    flags: MessageFlags.Ephemeral,
+  });
+
+  logger.info(`/edit-config used by ${interaction.user.tag} in guild ${guildId}`);
 }
 
 async function cmd_reloadConfig(interaction) {

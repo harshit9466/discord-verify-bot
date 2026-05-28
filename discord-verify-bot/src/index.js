@@ -70,7 +70,7 @@ for (const file of eventFiles) {
 }
 
 // ---- Scheduled jobs (panel refresh + verif reminder/kick) ----
-const { getAllConfiguredGuilds, getGuildConfig } = require('./config/configManager');
+const { getAllConfiguredGuilds, getGuildConfig, applyConfigOverrides } = require('./config/configManager');
 const statsRepo  = require('./db/statsRepository');
 const modSubRepo = require('./db/modSubscriberRepository');
 const memberRepo   = require('./db/memberRepository');
@@ -84,11 +84,18 @@ client.once('ready', async () => {
   // so the scheduled job always has up-to-date settings after a redeploy
   for (const guildId of getAllConfiguredGuilds()) {
     try {
-      const dbSettings = await settingsRepo.getVerifSettings(guildId);
-      if (dbSettings) {
-        const config = getGuildConfig(guildId);
-        if (config) config.verificationSettings = dbSettings;
+      const [dbSettings, configOverrides] = await Promise.all([
+        settingsRepo.getVerifSettings(guildId),
+        settingsRepo.getConfigOverrides(guildId),
+      ]);
+      const config = getGuildConfig(guildId);
+      if (config && dbSettings) {
+        config.verificationSettings = dbSettings;
         logger.info(`Loaded persisted verif settings for guild ${guildId}`);
+      }
+      if (configOverrides && Object.keys(configOverrides).length > 0) {
+        applyConfigOverrides(guildId, configOverrides);
+        logger.info(`Loaded config overrides for guild ${guildId}`);
       }
     } catch (err) {
       logger.warn(`Could not load DB settings for guild ${guildId}: ${err.message}`);
