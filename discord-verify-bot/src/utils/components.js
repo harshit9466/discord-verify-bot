@@ -369,8 +369,7 @@ function buildRejectReasonModal(guildId, userId) {
 }
 
 /**
- * Mod panel buttons — Refresh Stats + Notification Preferences
- * customId: verif:panel:refresh:{guildId}  /  verif:panel:notify:{guildId}
+ * Mod panel buttons — Refresh Stats + Notifications + Settings
  */
 function buildModPanelComponents(guildId) {
   const refresh = new ButtonBuilder()
@@ -380,10 +379,93 @@ function buildModPanelComponents(guildId) {
 
   const notify = new ButtonBuilder()
     .setCustomId(`verif:panel:notify:${guildId}`)
-    .setLabel('🔔 Notification Preferences')
+    .setLabel('🔔 Notifications')
     .setStyle(ButtonStyle.Primary);
 
-  return new ActionRowBuilder().addComponents(refresh, notify);
+  const settings = new ButtonBuilder()
+    .setCustomId(`verif:panel:settings:${guildId}`)
+    .setLabel('⚙️ Settings')
+    .setStyle(ButtonStyle.Secondary);
+
+  return new ActionRowBuilder().addComponents(refresh, notify, settings);
+}
+
+/**
+ * Verification settings toggle buttons — ephemeral settings panel
+ * customId prefix: verif:panel:stg-{action}:{guildId}
+ */
+function buildVerifSettingsComponents(guildId, settings) {
+  const s = settings || {};
+
+  const toggleReminder = new ButtonBuilder()
+    .setCustomId(`verif:panel:stg-reminder:${guildId}`)
+    .setLabel(s.reminderEnabled ? '⏰ Reminder: ON' : '⏰ Reminder: OFF')
+    .setStyle(s.reminderEnabled ? ButtonStyle.Success : ButtonStyle.Secondary);
+
+  const toggleKick = new ButtonBuilder()
+    .setCustomId(`verif:panel:stg-kick:${guildId}`)
+    .setLabel(s.autoKickEnabled ? '🚪 Auto-Kick: ON' : '🚪 Auto-Kick: OFF')
+    .setStyle(s.autoKickEnabled ? ButtonStyle.Success : ButtonStyle.Secondary);
+
+  const toggleInvite = new ButtonBuilder()
+    .setCustomId(`verif:panel:stg-invite:${guildId}`)
+    .setLabel(s.kickInviteEnabled ? '🔗 Invite: ON' : '🔗 Invite: OFF')
+    .setStyle(s.kickInviteEnabled ? ButtonStyle.Success : ButtonStyle.Secondary)
+    .setDisabled(!s.autoKickEnabled);
+
+  const editBtn = new ButtonBuilder()
+    .setCustomId(`verif:panel:stg-edit:${guildId}`)
+    .setLabel('✏️ Edit Hours & Link')
+    .setStyle(ButtonStyle.Primary);
+
+  return new ActionRowBuilder().addComponents(toggleReminder, toggleKick, toggleInvite, editBtn);
+}
+
+/**
+ * Verification settings modal — edit reminder hours, kick hours, invite link
+ */
+function buildVerifSettingsModal(guildId, currentSettings) {
+  const s = currentSettings || {};
+  const modal = new ModalBuilder()
+    .setCustomId(`verif:modal:verifSettings:${guildId}`)
+    .setTitle('Verification Settings');
+
+  const reminderHours = new TextInputBuilder()
+    .setCustomId('reminderHours')
+    .setLabel('Send reminder after how many hours?')
+    .setStyle(TextInputStyle.Short)
+    .setPlaceholder('e.g. 12')
+    .setValue(String(s.reminderHours ?? 12))
+    .setMinLength(1)
+    .setMaxLength(3)
+    .setRequired(true);
+
+  const autoKickHours = new TextInputBuilder()
+    .setCustomId('autoKickHours')
+    .setLabel('Auto-kick after how many hours?')
+    .setStyle(TextInputStyle.Short)
+    .setPlaceholder('e.g. 24')
+    .setValue(String(s.autoKickHours ?? 24))
+    .setMinLength(1)
+    .setMaxLength(3)
+    .setRequired(true);
+
+  const inviteLink = new TextInputBuilder()
+    .setCustomId('inviteLink')
+    .setLabel('Server invite link (sent to kicked users)')
+    .setStyle(TextInputStyle.Short)
+    .setPlaceholder('https://discord.gg/xxxxx  — leave blank to clear')
+    .setValue(s.kickInviteLink || '')
+    .setMaxLength(150)
+    .setRequired(false);
+
+  modal.addComponents(
+    new ActionRowBuilder().addComponents(reminderHours),
+    new ActionRowBuilder().addComponents(autoKickHours),
+    new ActionRowBuilder().addComponents(inviteLink),
+  );
+
+  return modal;
 }
 
 /**
@@ -415,4 +497,6 @@ module.exports = {
   buildRejectReasonModal,
   buildModPanelComponents,
   buildNotifyToggleButton,
+  buildVerifSettingsComponents,
+  buildVerifSettingsModal,
 };

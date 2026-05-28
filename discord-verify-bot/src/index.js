@@ -69,43 +69,105 @@ for (const file of eventFiles) {
   logger.debug(`Event handler loaded: ${event.name}`);
 }
 
-// ---- Auto-refresh mod panel every hour ----
+// ---- Scheduled jobs (panel refresh + verif reminder/kick) ----
 const { getAllConfiguredGuilds, getGuildConfig } = require('./config/configManager');
 const statsRepo  = require('./db/statsRepository');
 const modSubRepo = require('./db/modSubscriberRepository');
+const memberRepo = require('./db/memberRepository');
+const eventRepo  = require('./db/eventRepository');
 const embeds     = require('./utils/embeds');
 const components = require('./utils/components');
 
 client.once('ready', () => {
+
+  // --- Job 1: Mod panel auto-refresh (every 1 hour) ---
   setInterval(async () => {
     for (const guildId of getAllConfiguredGuilds()) {
       const config = getGuildConfig(guildId);
       if (!config?.panelMessageId || !config?.panelChannelId) continue;
-
       try {
         const guild   = client.guilds.cache.get(guildId);
         const channel = guild?.channels.cache.get(config.panelChannelId);
         if (!channel) continue;
-
         const msg = await channel.messages.fetch(config.panelMessageId).catch(() => null);
         if (!msg) continue;
-
         const [stats, subscriberCount] = await Promise.all([
           statsRepo.getStats(guildId, 7),
           modSubRepo.getEnabledCount(guildId),
         ]);
-
         await msg.edit({
           embeds:     [embeds.buildModPanelEmbed(stats, subscriberCount)],
           components: [components.buildModPanelComponents(guildId)],
         });
-
         logger.info(`Mod panel auto-refreshed for guild ${guildId}`);
       } catch (err) {
         logger.error(`Auto-refresh failed for guild ${guildId}:`, { error: err.message });
       }
     }
   }, 60 * 60 * 1000);
+
+  // --- Job 2: Verification reminder + auto-kick (every 30 min) ---
+  const runVerifJob = async () => {
+    for (const guildId of getAllConfiguredGuilds()) {
+      const config = getGuildConfig(guildId);
+      const vs     = config?.verificationSettings;
+      if (!vs) continue;
+
+      const guild = client.guilds.cache.get(guildId);
+      if (!guild) continue;
+
+      const pendingRoleId = config.roles?.verificationPendingRoleId;
+
+      // Reminder pass
+      if (vs.reminderEnabled && vs.reminderHours > 0) {
+        const rows = await memberRepo.getMembersNeedingReminder(guildId, vs.reminderHours).catch(() => []);
+        for (const row of rows) {
+          try {
+            const member = await guild.members.fetch(row.discord_user_id).catch(() => null);
+            if (!member) continue;
+            // Skip members who have already submitted intro (they have @Verification Pending)
+            if (pendingRoleId && member.roles.cache.has(pendingRoleId)) continue;
+            await member.user.send({
+              embeds: [embeds.buildReminderDMEmbed(guild.name, vs.autoKickEnabled, vs.autoKickHours)],
+            }).catch(() => {});
+            await memberRepo.markReminderSent(row.discord_user_id, guildId);
+            logger.info(`Verification reminder sent to ${row.discord_user_id} in ${guildId}`);
+          } catch (err) {
+            logger.error(`Reminder failed for ${row.discord_user_id}:`, { error: err.message });
+          }
+        }
+      }
+
+      // Auto-kick pass
+      if (vs.autoKickEnabled && vs.autoKickHours > 0) {
+        const rows = await memberRepo.getMembersNeedingKick(guildId, vs.autoKickHours).catch(() => []);
+        for (const row of rows) {
+          try {
+            const member = await guild.members.fetch(row.discord_user_id).catch(() => null);
+            if (!member) continue;
+            // Skip members who have submitted intro (waiting for mod review)
+            if (pendingRoleId && member.roles.cache.has(pendingRoleId)) continue;
+            const inviteLink = vs.kickInviteEnabled && vs.kickInviteLink ? vs.kickInviteLink : null;
+            await member.user.send({
+              embeds: [embeds.buildKickDMEmbed(guild.name, inviteLink)],
+            }).catch(() => {});
+            await member.kick(`Verification timeout — ${vs.autoKickHours}h exceeded`).catch(() => {});
+            await memberRepo.updateMemberStatus(row.discord_user_id, guildId, 'TIMED_OUT');
+            await eventRepo.logEvent(row.discord_user_id, guildId, 'KICKED', {
+              notes: `Auto-kicked after ${vs.autoKickHours}h verification timeout`,
+            });
+            logger.info(`Auto-kicked ${row.discord_user_id} from ${guildId} (timeout)`);
+          } catch (err) {
+            logger.error(`Auto-kick failed for ${row.discord_user_id}:`, { error: err.message });
+          }
+        }
+      }
+    }
+  };
+
+  setInterval(runVerifJob, 30 * 60 * 1000);
+  // Run once on startup so recently overdue members aren't missed after a restart
+  runVerifJob().catch(err => logger.error('Initial verif job failed:', { error: err.message }));
 });
 
 // ---- Init DB, then login ----

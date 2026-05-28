@@ -59,6 +59,11 @@ async function initDb() {
       CREATE INDEX IF NOT EXISTS idx_events_user    ON events(discord_user_id, guild_id);
       CREATE INDEX IF NOT EXISTS idx_events_type    ON events(event_type);
     `);
+
+    // Additive migrations — safe to run every time (IF NOT EXISTS / IF NOT EXISTS logic)
+    await client.query(`
+      ALTER TABLE members ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMPTZ;
+    `);
     logger.info('Database tables initialized successfully');
   } finally {
     client.release();

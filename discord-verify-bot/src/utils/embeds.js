@@ -418,6 +418,66 @@ function buildModPanelEmbed(stats, subscriberCount) {
 }
 
 /**
+ * Reminder DM — unverified member ko milta hai after reminderHours
+ */
+function buildReminderDMEmbed(guildName, autoKickEnabled, autoKickHours) {
+  let desc = `Hey! You haven't completed your verification in **${guildName}** yet.\n\n`;
+  desc += `Head back to the server and click the **🔐 Start Verification** button in the verify channel.\n\n`;
+  if (autoKickEnabled && autoKickHours > 0) {
+    desc += `⚠️ You have **${autoKickHours} hours from joining** to complete verification — after that you'll be removed from the server.`;
+  } else {
+    desc += `Take your time — just don't forget to complete it! 😊`;
+  }
+  return new EmbedBuilder()
+    .setColor(COLORS.YELLOW)
+    .setTitle('⏰ Reminder — Complete Your Verification!')
+    .setDescription(desc)
+    .setTimestamp();
+}
+
+/**
+ * Kick DM — auto-kicked member ko milta hai with optional invite link
+ */
+function buildKickDMEmbed(guildName, inviteLink) {
+  let desc = `You've been removed from **${guildName}** because you didn't complete the verification process in time.\n\n`;
+  desc += inviteLink
+    ? `You're welcome to rejoin and try again:\n${inviteLink}`
+    : `If you'd like to rejoin, please ask a server member for an invite link.`;
+  return new EmbedBuilder()
+    .setColor(COLORS.RED)
+    .setTitle('🚪 Removed — Verification Timeout')
+    .setDescription(desc)
+    .setTimestamp();
+}
+
+/**
+ * Verification settings embed — mod panel settings page
+ */
+function buildVerifSettingsEmbed(settings) {
+  const s = settings || {};
+  const reminderStatus = s.reminderEnabled
+    ? `✅ ON — reminder after **${s.reminderHours ?? 12}h**`
+    : '❌ OFF';
+  const kickStatus = s.autoKickEnabled
+    ? `✅ ON — kick after **${s.autoKickHours ?? 24}h**`
+    : '❌ OFF';
+  const inviteStatus = s.kickInviteEnabled
+    ? (s.kickInviteLink ? `✅ ON — \`${s.kickInviteLink}\`` : '✅ ON — *(no link set — edit to add)*')
+    : '❌ OFF';
+
+  return new EmbedBuilder()
+    .setColor(COLORS.BLURPLE)
+    .setTitle('⚙️ Verification Settings')
+    .setDescription('Configure auto-reminder and auto-kick for unverified members.')
+    .addFields(
+      { name: '⏰ Reminder DM',     value: reminderStatus },
+      { name: '🚪 Auto-Kick',       value: kickStatus },
+      { name: '🔗 Invite on Kick',  value: `${inviteStatus}\n*(only applies when auto-kick is ON)*` },
+    )
+    .setFooter({ text: 'Toggle buttons to turn on/off · Edit Hours & Link to change values' });
+}
+
+/**
  * Generic error embed
  */
 function buildErrorEmbed(message) {
@@ -445,5 +505,8 @@ module.exports = {
   buildVerifiedLogEmbed,
   buildRejectedLogEmbed,
   buildModPanelEmbed,
+  buildReminderDMEmbed,
+  buildKickDMEmbed,
+  buildVerifSettingsEmbed,
   buildErrorEmbed,
 };

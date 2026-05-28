@@ -32,6 +32,15 @@
     "verificationMode":          "channel"
   },
 
+  "verificationSettings": {
+    "reminderEnabled":   false,
+    "reminderHours":     12,
+    "autoKickEnabled":   false,
+    "autoKickHours":     24,
+    "kickInviteEnabled": false,
+    "kickInviteLink":    ""
+  },
+
   "roleCategories": [
     {
       "name":        "Gender",

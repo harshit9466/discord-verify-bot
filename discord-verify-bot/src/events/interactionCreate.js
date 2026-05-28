@@ -68,6 +68,7 @@ async function handleModalSubmit(interaction, parts) {
   if      (parts[1] === 'modal' && parts[2] === 'intro')         await step_introSubmit(interaction, parts);
   else if (parts[1] === 'modal' && parts[2] === 'kinks')         await step_kinksSubmit(interaction, parts);
   else if (parts[1] === 'mod'   && parts[2] === 'rejectReason')  await mod_rejectReason(interaction, parts);
+  else if (parts[1] === 'modal' && parts[2] === 'verifSettings') await modal_saveVerifSettings(interaction, parts);
 }
 
 // ============================================================
@@ -670,6 +671,11 @@ async function panel_action(interaction, parts) {
   if      (sub === 'refresh')       await panel_refresh(interaction, guildId);
   else if (sub === 'notify')        await panel_showNotifyPrefs(interaction, guildId);
   else if (sub === 'notify-toggle') await panel_toggleNotify(interaction, guildId);
+  else if (sub === 'settings')      await panel_showSettings(interaction, guildId);
+  else if (sub === 'stg-reminder')  await panel_toggleSetting(interaction, guildId, 'reminderEnabled');
+  else if (sub === 'stg-kick')      await panel_toggleSetting(interaction, guildId, 'autoKickEnabled');
+  else if (sub === 'stg-invite')    await panel_toggleSetting(interaction, guildId, 'kickInviteEnabled');
+  else if (sub === 'stg-edit')      await panel_editSettings(interaction, guildId);
 }
 
 async function panel_refresh(interaction, guildId) {
@@ -718,6 +724,65 @@ async function panel_toggleNotify(interaction, guildId) {
         : "🔕 Notifications **disabled** — no more pings.",
     }],
     components: [components.buildNotifyToggleButton(guildId, newState)],
+  });
+}
+
+async function panel_showSettings(interaction, guildId) {
+  const config   = getGuildConfig(guildId);
+  const settings = config?.verificationSettings || {};
+  await interaction.reply({
+    embeds:     [embeds.buildVerifSettingsEmbed(settings)],
+    components: [components.buildVerifSettingsComponents(guildId, settings)],
+    flags:      MessageFlags.Ephemeral,
+  });
+}
+
+async function panel_toggleSetting(interaction, guildId, key) {
+  const config  = getGuildConfig(guildId);
+  const current = config?.verificationSettings || {};
+  const updated = { ...current, [key]: !current[key] };
+  saveGuildConfig(guildId, { verificationSettings: updated });
+  await interaction.update({
+    embeds:     [embeds.buildVerifSettingsEmbed(updated)],
+    components: [components.buildVerifSettingsComponents(guildId, updated)],
+  });
+}
+
+async function panel_editSettings(interaction, guildId) {
+  const config = getGuildConfig(guildId);
+  await interaction.showModal(components.buildVerifSettingsModal(guildId, config?.verificationSettings));
+}
+
+async function modal_saveVerifSettings(interaction, parts) {
+  const guildId = parts[3];
+
+  if (!interaction.member?.permissions.has('ManageRoles') &&
+      !interaction.member?.permissions.has('Administrator')) {
+    return interaction.reply({ content: 'Mod panel is for moderators only.', flags: MessageFlags.Ephemeral });
+  }
+
+  const reminderHoursRaw = parseInt(interaction.fields.getTextInputValue('reminderHours').trim());
+  const autoKickHoursRaw = parseInt(interaction.fields.getTextInputValue('autoKickHours').trim());
+  const inviteLink       = interaction.fields.getTextInputValue('inviteLink').trim() || '';
+
+  if (isNaN(reminderHoursRaw) || reminderHoursRaw < 1 || isNaN(autoKickHoursRaw) || autoKickHoursRaw < 1) {
+    return interaction.reply({ content: '❌ Invalid hours — enter a positive number (minimum 1).', flags: MessageFlags.Ephemeral });
+  }
+
+  const config  = getGuildConfig(guildId);
+  const current = config?.verificationSettings || {};
+  const updated = {
+    ...current,
+    reminderHours:  reminderHoursRaw,
+    autoKickHours:  autoKickHoursRaw,
+    kickInviteLink: inviteLink,
+  };
+  saveGuildConfig(guildId, { verificationSettings: updated });
+
+  await interaction.reply({
+    embeds:     [embeds.buildVerifSettingsEmbed(updated)],
+    components: [components.buildVerifSettingsComponents(guildId, updated)],
+    flags:      MessageFlags.Ephemeral,
   });
 }
 
