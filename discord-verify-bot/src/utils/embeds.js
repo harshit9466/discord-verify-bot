@@ -257,21 +257,21 @@ function buildPublicIntroEmbed(member, state, config) {
     ? '🌗 SFW + NSFW'
     : '🌞 SFW Only';
 
-  // ---- Gender + Pronouns — config ke roleCategories se dynamically extract ----
-  function getRoleLabelsForCategory(catName) {
-    const catIndex = config.roleCategories.findIndex(c => c.name === catName);
-    if (catIndex === -1 || !selectedRoles?.[catIndex]?.length) return null;
-    return selectedRoles[catIndex]
-      .map(id => {
-        const r = config.roleCategories[catIndex].roles.find(role => role.id === id);
-        return r ? `${r.emoji || ''} ${r.label}`.trim() : null;
-      })
-      .filter(Boolean)
-      .join(', ');
-  }
-
-  const genderText  = getRoleLabelsForCategory('Gender');
-  const pronounText = getRoleLabelsForCategory('Pronouns');
+  // ---- All role categories — same logic as mod queue, fully dynamic ----
+  const roleCategoryFields = config.roleCategories
+    .map((cat, i) => {
+      const ids = selectedRoles?.[i] || [];
+      if (!ids.length) return null;
+      const labels = ids
+        .map(id => {
+          const r = cat.roles.find(role => role.id === id);
+          return r ? `${r.emoji || ''} ${r.label}`.trim() : null;
+        })
+        .filter(Boolean)
+        .join(', ');
+      return labels ? { name: `🏷️ ${cat.name}`, value: labels, inline: true } : null;
+    })
+    .filter(Boolean);
 
   // ---- Build embed ----
   const displayName = intro?.displayName || member.user.displayName;
@@ -296,12 +296,9 @@ function buildPublicIntroEmbed(member, state, config) {
   }
   embed.addFields({ name: '🔒 Access', value: badge, inline: true });
 
-  // Gender + Pronouns (from role selection step)
-  if (genderText) {
-    embed.addFields({ name: '🏳️ Gender', value: genderText, inline: true });
-  }
-  if (pronounText) {
-    embed.addFields({ name: '💬 Pronouns', value: pronounText, inline: true });
+  // All selected role categories (Gender, Pronouns, etc. — whatever config defines)
+  if (roleCategoryFields.length) {
+    embed.addFields(...roleCategoryFields);
   }
 
   // How they found us
