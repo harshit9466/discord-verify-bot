@@ -47,6 +47,14 @@ async function initDb() {
         notes            TEXT
       );
 
+      CREATE TABLE IF NOT EXISTS mod_subscribers (
+        id                    SERIAL PRIMARY KEY,
+        discord_user_id       VARCHAR(20)  NOT NULL,
+        guild_id              VARCHAR(20)  NOT NULL,
+        notifications_enabled BOOLEAN      NOT NULL DEFAULT true,
+        UNIQUE(discord_user_id, guild_id)
+      );
+
       CREATE INDEX IF NOT EXISTS idx_members_lookup ON members(discord_user_id, guild_id);
       CREATE INDEX IF NOT EXISTS idx_events_user    ON events(discord_user_id, guild_id);
       CREATE INDEX IF NOT EXISTS idx_events_type    ON events(event_type);

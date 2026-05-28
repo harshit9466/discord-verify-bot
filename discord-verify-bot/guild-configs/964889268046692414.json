@@ -8,7 +8,9 @@
     "modQueueChannelId":     "1508193016840454274",
     "logChannelId":          "1508193117445029940",
     "accountClaimChannelId": "1508193217835958534",
-    "introChannelId":        "965019495217365036"
+    "introChannelId":        "965019495217365036",
+    "verifiedLogChannelId":  "1509619022197559436",
+    "rejectedLogChannelId":  "1509619063591276565"
   },
 
   "roles": {

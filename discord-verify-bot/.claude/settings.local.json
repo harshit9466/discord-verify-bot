@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node setup-nsfw-permissions.js)",
+      "Bash(npx gitnexus *)",
+      "Bash(node -e ' *)"
+    ]
+  }
+}

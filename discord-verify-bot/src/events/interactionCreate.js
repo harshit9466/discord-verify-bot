@@ -10,6 +10,8 @@ const embeds      = require('../utils/embeds');
 const components  = require('../utils/components');
 const memberRepo  = require('../db/memberRepository');
 const eventRepo   = require('../db/eventRepository');
+const modSubRepo  = require('../db/modSubscriberRepository');
+const statsRepo   = require('../db/statsRepository');
 
 module.exports = {
   name: 'interactionCreate',
@@ -55,6 +57,7 @@ async function handleButton(interaction, parts) {
   else if (action === 'intro')   await step_openIntroModal(interaction, parts);
   else if (action === 'kinks')   await step_kinks(interaction, parts);
   else if (action === 'mod')     await mod_action(interaction, parts);
+  else if (action === 'panel')   await panel_action(interaction, parts);
 }
 
 async function handleSelectMenu(interaction, parts) {
@@ -397,11 +400,9 @@ async function mod_action(interaction, parts) {
 
   if (subAction === 'approve') {
     await interaction.deferUpdate();
+    // Disable buttons immediately (double-click protection) — message will be deleted after processing
     await interaction.editReply({
-      embeds: [
-        interaction.message.embeds[0],
-        { color: 0xFEE75C, description: '⏳ Processing approval...' },
-      ],
+      embeds:     interaction.message.embeds,
       components: [components.buildModQueueButtonsDisabled(guildId, userId)],
     });
     await mod_approve(interaction, guildId, userId, config);
@@ -482,17 +483,17 @@ async function mod_approve(interaction, guildId, userId, config) {
       }
     }
 
-    await interaction.editReply({
-      embeds: [
-        interaction.message.embeds[0],
-        { color: 0x57F287, description: 'Approved by ' + interaction.user.tag + ' at <t:' + Math.floor(Date.now() / 1000) + ':T>' },
-      ],
-      components: [],
-    });
-
+    // Delete from mod queue + post to verified log channel
+    await interaction.message.delete().catch(() => {});
+    const verifiedLogChannel = guild.channels.cache.get(config.channels.verifiedLogChannelId);
+    if (verifiedLogChannel) {
+      await verifiedLogChannel.send({
+        embeds: [embeds.buildVerifiedLogEmbed(member, interaction.user, roleName)],
+      }).catch(() => {});
+    }
     const logChannel = guild.channels.cache.get(config.channels.logChannelId);
     if (logChannel) {
-      await logChannel.send({ content: 'Verified: ' + member.user.tag + ' -> @' + roleName + ' | By: ' + interaction.user.tag });
+      await logChannel.send({ content: `✅ Verified: ${member.user.tag} → @${roleName} | By: ${interaction.user.tag}` }).catch(() => {});
     }
 
     // Persist verification to DB
@@ -514,7 +515,7 @@ async function mod_approve(interaction, guildId, userId, config) {
 
   } catch (err) {
     logger.error('Failed to approve member ' + userId + ':', { error: err.message });
-    await interaction.editReply({ content: 'Approval failed: ' + err.message });
+    await interaction.followUp({ content: 'Approval failed: ' + err.message, flags: MessageFlags.Ephemeral }).catch(() => {});
   }
 }
 
@@ -536,21 +537,23 @@ async function mod_rejectReason(interaction, parts) {
 
     await member.user.send({ embeds: [embeds.buildRejectedEmbed(reason)] }).catch(() => {});
 
-    await interaction.editReply({
-      embeds: [
-        interaction.message.embeds[0],
-        { color: 0xED4245, description: 'Rejected by ' + interaction.user.tag + '\nReason: ' + reason },
-      ],
-      components: [],
-    });
-
     const pendingRole = guild.roles.cache.get(config.roles.verificationPendingRoleId);
     if (pendingRole) await member.roles.remove(pendingRole).catch(() => {});
 
+    // Delete from mod queue + post to rejected log channel
+    await interaction.message.delete().catch(() => {});
+    const rejectedLogChannel = guild.channels.cache.get(config.channels.rejectedLogChannelId);
+    if (rejectedLogChannel) {
+      await rejectedLogChannel.send({
+        embeds: [embeds.buildRejectedLogEmbed(member, interaction.user, reason)],
+      }).catch(() => {});
+    }
     const logChannel = guild.channels.cache.get(config.channels.logChannelId);
     if (logChannel) {
-      await logChannel.send({ content: 'Rejected: ' + member.user.tag + ' | By: ' + interaction.user.tag + ' | Reason: ' + reason });
+      await logChannel.send({ content: `❌ Rejected: ${member.user.tag} | By: ${interaction.user.tag} | Reason: ${reason}` }).catch(() => {});
     }
+
+    memberRepo.updateMemberStatus(userId, guildId, 'REJECTED').catch(() => {});
 
     eventRepo.logEvent(userId, guildId, 'REJECTED', {
       triggeredBy: interaction.user.id,
@@ -600,7 +603,12 @@ async function postToModQueue(interaction, guildId, userId, state) {
     const pendingRole = guild.roles.cache.get(config.roles.verificationPendingRoleId);
     if (pendingRole) await member.roles.add(pendingRole).catch(() => {});
 
+    // Ping subscribed mods
+    const subscribers = await modSubRepo.getEnabledSubscribers(guildId).catch(() => []);
+    const mentions = subscribers.map(s => `<@${s.discord_user_id}>`).join(' ');
+
     const modMsg = await modQueueChannel.send({
+      content:    mentions || undefined,
       embeds:     [embeds.buildModQueueEmbed(member, state, config)],
       components: [components.buildModQueueButtons(guildId, userId)],
     });
@@ -623,12 +631,84 @@ async function postToModQueue(interaction, guildId, userId, state) {
 // SLASH COMMAND HANDLERS
 // ============================================================
 
+// ============================================================
+// PANEL ACTIONS
+// ============================================================
+
+async function panel_action(interaction, parts) {
+  const sub     = parts[2];
+  const guildId = parts[3];
+
+  if (!interaction.member?.permissions.has('ManageRoles') &&
+      !interaction.member?.permissions.has('Administrator')) {
+    return interaction.reply({ content: 'Mod panel is for moderators only.', flags: MessageFlags.Ephemeral });
+  }
+
+  if      (sub === 'refresh')       await panel_refresh(interaction, guildId);
+  else if (sub === 'notify')        await panel_showNotifyPrefs(interaction, guildId);
+  else if (sub === 'notify-toggle') await panel_toggleNotify(interaction, guildId);
+}
+
+async function panel_refresh(interaction, guildId) {
+  await interaction.deferUpdate();
+  try {
+    const [stats, subscriberCount] = await Promise.all([
+      statsRepo.getStats(guildId, 7),
+      modSubRepo.getEnabledCount(guildId),
+    ]);
+    await interaction.editReply({
+      embeds:     [embeds.buildModPanelEmbed(stats, subscriberCount)],
+      components: [components.buildModPanelComponents(guildId)],
+    });
+  } catch (err) {
+    logger.error('Panel refresh failed:', { error: err.message });
+    await interaction.followUp({ content: 'Failed to refresh stats.', flags: MessageFlags.Ephemeral }).catch(() => {});
+  }
+}
+
+async function panel_showNotifyPrefs(interaction, guildId) {
+  const subscribed = await modSubRepo.isSubscribed(interaction.user.id, guildId).catch(() => false);
+  await interaction.reply({
+    embeds: [{
+      color:       subscribed ? 0x57F287 : 0xED4245,
+      title:       '🔔 Your Notification Preference',
+      description: subscribed
+        ? "You're **subscribed** — you'll be pinged when a new verification arrives."
+        : "You're **unsubscribed** — you won't receive pings for new verifications.",
+    }],
+    components: [components.buildNotifyToggleButton(guildId, subscribed)],
+    flags:      MessageFlags.Ephemeral,
+  });
+}
+
+async function panel_toggleNotify(interaction, guildId) {
+  const newState = await modSubRepo.toggleSubscription(interaction.user.id, guildId).catch(() => null);
+  if (newState === null) {
+    return interaction.update({ content: 'Failed to update preference.', components: [] });
+  }
+  await interaction.update({
+    embeds: [{
+      color:       newState ? 0x57F287 : 0xED4245,
+      title:       '🔔 Notifications Updated',
+      description: newState
+        ? "✅ Notifications **enabled** — you'll be pinged on new verifications."
+        : "🔕 Notifications **disabled** — no more pings.",
+    }],
+    components: [components.buildNotifyToggleButton(guildId, newState)],
+  });
+}
+
+// ============================================================
+// SLASH COMMAND HANDLERS
+// ============================================================
+
 async function handleSlashCommand(interaction) {
   const cmd = interaction.commandName;
-  if      (cmd === 'ping')          await cmd_ping(interaction);
-  else if (cmd === 'setup-verify')  await cmd_setupVerify(interaction);
-  else if (cmd === 'reload-config') await cmd_reloadConfig(interaction);
-  else if (cmd === 'verify-me')     await cmd_verifyMe(interaction);
+  if      (cmd === 'ping')            await cmd_ping(interaction);
+  else if (cmd === 'setup-verify')    await cmd_setupVerify(interaction);
+  else if (cmd === 'setup-mod-panel') await cmd_setupModPanel(interaction);
+  else if (cmd === 'reload-config')   await cmd_reloadConfig(interaction);
+  else if (cmd === 'verify-me')       await cmd_verifyMe(interaction);
   else await interaction.reply({ content: 'Unknown command: /' + cmd, flags: MessageFlags.Ephemeral });
 }
 
@@ -670,6 +750,34 @@ async function cmd_setupVerify(interaction) {
   });
 
   logger.info('/setup-verify run by ' + interaction.user.tag + ' in guild ' + interaction.guildId);
+}
+
+async function cmd_setupModPanel(interaction) {
+  if (!interaction.member?.permissions.has('Administrator')) {
+    return interaction.reply({ content: 'Administrator permission required.', flags: MessageFlags.Ephemeral });
+  }
+
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+  try {
+    const guildId = interaction.guildId;
+    const [stats, subscriberCount] = await Promise.all([
+      statsRepo.getStats(guildId, 7),
+      modSubRepo.getEnabledCount(guildId),
+    ]);
+
+    const panelMsg = await interaction.channel.send({
+      embeds:     [embeds.buildModPanelEmbed(stats, subscriberCount)],
+      components: [components.buildModPanelComponents(guildId)],
+    });
+
+    await panelMsg.pin().catch(() => logger.warn('Could not pin mod panel — pin it manually'));
+    await interaction.editReply({ content: '✅ Mod panel posted and pinned in this channel!' });
+    logger.info('/setup-mod-panel run by ' + interaction.user.tag);
+  } catch (err) {
+    logger.error('/setup-mod-panel failed:', { error: err.message });
+    await interaction.editReply({ content: 'Failed: ' + err.message });
+  }
 }
 
 async function cmd_reloadConfig(interaction) {

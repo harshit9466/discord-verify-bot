@@ -362,6 +362,62 @@ function buildKinksStepEmbed() {
 }
 
 /**
+ * Verified log embed — verifiedLogChannel mein post hota hai jab mod approve kare
+ */
+function buildVerifiedLogEmbed(member, modUser, roleName) {
+  const accountAgeDays = Math.floor((Date.now() - member.user.createdTimestamp) / 86400000);
+  return new EmbedBuilder()
+    .setColor(COLORS.GREEN)
+    .setTitle('✅ Member Verified')
+    .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+    .addFields(
+      { name: '👤 User',         value: `${member.user.tag}\n<@${member.id}>`, inline: true },
+      { name: '🎭 Role Assigned', value: `@${roleName}`,                        inline: true },
+      { name: '👮 Approved By',   value: modUser.tag,                            inline: true },
+    )
+    .setFooter({ text: `Account age: ${accountAgeDays}d` })
+    .setTimestamp();
+}
+
+/**
+ * Rejected log embed — rejectedLogChannel mein post hota hai jab mod reject kare
+ */
+function buildRejectedLogEmbed(member, modUser, reason) {
+  const accountAgeDays = Math.floor((Date.now() - member.user.createdTimestamp) / 86400000);
+  return new EmbedBuilder()
+    .setColor(COLORS.RED)
+    .setTitle('❌ Verification Rejected')
+    .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+    .addFields(
+      { name: '👤 User',       value: `${member.user.tag}\n<@${member.id}>`, inline: true },
+      { name: '👮 Rejected By', value: modUser.tag,                           inline: true },
+      { name: '📝 Reason',      value: reason },
+    )
+    .setFooter({ text: `Account age: ${accountAgeDays}d` })
+    .setTimestamp();
+}
+
+/**
+ * Mod panel embed — #mod-panel mein pinned rehta hai, stats + subscriber count dikhata hai
+ */
+function buildModPanelEmbed(stats, subscriberCount) {
+  const avgTime = stats.avgVerifyHours > 0 ? `${stats.avgVerifyHours}h` : 'N/A';
+  return new EmbedBuilder()
+    .setColor(COLORS.BLURPLE)
+    .setTitle('🤖 VerifyBot — Mod Panel')
+    .addFields(
+      {
+        name:  '📊 Stats — Last 7 Days',
+        value: `**Joins:** ${stats.joins}  ·  **Verified:** ${stats.verified}  ·  **Rejected:** ${stats.rejected}\n**Auto-Verified:** ${stats.autoVerified}  ·  **Avg Verify Time:** ${avgTime}`,
+      },
+      { name: '👥 Currently Unverified', value: `${stats.totalUnverified} members`, inline: true },
+      { name: '🔔 Subscribed Mods',      value: `${subscriberCount}`,               inline: true },
+    )
+    .setFooter({ text: 'Last refreshed' })
+    .setTimestamp();
+}
+
+/**
  * Generic error embed
  */
 function buildErrorEmbed(message) {
@@ -386,5 +442,8 @@ module.exports = {
   buildPublicIntroEmbed,
   buildModQueueEmbed,
   buildAutoVerifyEmbed,
+  buildVerifiedLogEmbed,
+  buildRejectedLogEmbed,
+  buildModPanelEmbed,
   buildErrorEmbed,
 };

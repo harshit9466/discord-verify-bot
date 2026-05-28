@@ -44,6 +44,12 @@ const commands = [
     .setDescription('Reload guild config from file (Admin only)')
     .setDefaultMemberPermissions('8'),
 
+  // /setup-mod-panel — Mod panel embed post karo (stats + notification toggle)
+  new SlashCommandBuilder()
+    .setName('setup-mod-panel')
+    .setDescription('Post the mod panel (stats + notifications) in this channel (Admin only)')
+    .setDefaultMemberPermissions('8'),
+
 ].map(cmd => cmd.toJSON());
 
 // ---- Register commands with Discord API ----

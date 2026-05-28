@@ -368,6 +368,37 @@ function buildRejectReasonModal(guildId, userId) {
   return modal;
 }
 
+/**
+ * Mod panel buttons — Refresh Stats + Notification Preferences
+ * customId: verif:panel:refresh:{guildId}  /  verif:panel:notify:{guildId}
+ */
+function buildModPanelComponents(guildId) {
+  const refresh = new ButtonBuilder()
+    .setCustomId(`verif:panel:refresh:${guildId}`)
+    .setLabel('🔄 Refresh Stats')
+    .setStyle(ButtonStyle.Secondary);
+
+  const notify = new ButtonBuilder()
+    .setCustomId(`verif:panel:notify:${guildId}`)
+    .setLabel('🔔 Notification Preferences')
+    .setStyle(ButtonStyle.Primary);
+
+  return new ActionRowBuilder().addComponents(refresh, notify);
+}
+
+/**
+ * Notification toggle button — ephemeral message mein dikhta hai
+ * customId: verif:panel:notify-toggle:{guildId}
+ */
+function buildNotifyToggleButton(guildId, isCurrentlyOn) {
+  const btn = new ButtonBuilder()
+    .setCustomId(`verif:panel:notify-toggle:${guildId}`)
+    .setLabel(isCurrentlyOn ? '🔕 Turn OFF Notifications' : '🔔 Turn ON Notifications')
+    .setStyle(isCurrentlyOn ? ButtonStyle.Danger : ButtonStyle.Success);
+
+  return new ActionRowBuilder().addComponents(btn);
+}
+
 module.exports = {
   buildBeginButton,
   buildPersistentVerifyButton,
@@ -382,4 +413,6 @@ module.exports = {
   buildKinksModal,
   buildKinksStepButtons,
   buildRejectReasonModal,
+  buildModPanelComponents,
+  buildNotifyToggleButton,
 };
