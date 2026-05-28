@@ -25,6 +25,10 @@ if (!process.env.CLIENT_ID) {
   logger.error('CLIENT_ID is missing in .env file. Bot cannot start.');
   process.exit(1);
 }
+if (!process.env.DATABASE_URL) {
+  logger.error('DATABASE_URL is missing in .env file. Bot cannot start.');
+  process.exit(1);
+}
 
 // ---- Create Discord Client ----
 // "Intents" = Discord ko batao ki kaunse events receive karne hain
@@ -65,12 +69,23 @@ for (const file of eventFiles) {
   logger.debug(`Event handler loaded: ${event.name}`);
 }
 
-// ---- Login ----
-logger.info('Connecting to Discord...');
-client.login(process.env.DISCORD_TOKEN).catch(err => {
-  logger.error('Login failed. Check your DISCORD_TOKEN in .env:', err.message);
-  process.exit(1);
-});
+// ---- Init DB, then login ----
+const { initDb } = require('./db/connection');
+
+(async () => {
+  try {
+    await initDb();
+  } catch (err) {
+    logger.error('Database initialization failed — bot cannot start:', { error: err.message });
+    process.exit(1);
+  }
+
+  logger.info('Connecting to Discord...');
+  client.login(process.env.DISCORD_TOKEN).catch(err => {
+    logger.error('Login failed. Check your DISCORD_TOKEN in .env:', err.message);
+    process.exit(1);
+  });
+})();
 
 // ---- Graceful Shutdown ----
 // Jab Railway ya tu CTRL+C kare, Discord se cleanly disconnect hoga

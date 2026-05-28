@@ -6,8 +6,10 @@ const { MessageFlags } = require('discord.js');
 const logger = require('../utils/logger');
 const { getGuildConfig } = require('../config/configManager');
 const { getState, initState, updateState, clearState, STEPS } = require('../utils/stateManager');
-const embeds     = require('../utils/embeds');
-const components = require('../utils/components');
+const embeds      = require('../utils/embeds');
+const components  = require('../utils/components');
+const memberRepo  = require('../db/memberRepository');
+const eventRepo   = require('../db/eventRepository');
 
 module.exports = {
   name: 'interactionCreate',
@@ -493,6 +495,20 @@ async function mod_approve(interaction, guildId, userId, config) {
       await logChannel.send({ content: 'Verified: ' + member.user.tag + ' -> @' + roleName + ' | By: ' + interaction.user.tag });
     }
 
+    // Persist verification to DB
+    const roleAssigned = pref === 'NSFW_ONLY' ? 'NSFW_ONLY' : pref === 'NSFW' ? 'INITIATE' : 'TRAVELER';
+    memberRepo.saveMemberOnVerify(userId, guildId, {
+      contentPreference: pref,
+      roleAssigned,
+      selectedRoles: state?.selectedRoles,
+      intro:         state?.intro,
+    }).catch(err => logger.error('DB save failed on verify:', { error: err.message }));
+
+    eventRepo.logEvent(userId, guildId, 'VERIFIED', {
+      triggeredBy: interaction.user.id,
+      notes:       `Approved by ${interaction.user.tag}`,
+    }).catch(() => {});
+
     clearState(guildId, userId);
     logger.info(member.user.tag + ' approved by ' + interaction.user.tag + ' in ' + guild.name);
 
@@ -535,6 +551,11 @@ async function mod_rejectReason(interaction, parts) {
     if (logChannel) {
       await logChannel.send({ content: 'Rejected: ' + member.user.tag + ' | By: ' + interaction.user.tag + ' | Reason: ' + reason });
     }
+
+    eventRepo.logEvent(userId, guildId, 'REJECTED', {
+      triggeredBy: interaction.user.id,
+      notes:       `Reason: ${reason}`,
+    }).catch(() => {});
 
     clearState(guildId, userId);
     logger.info(member.user.tag + ' rejected by ' + interaction.user.tag);

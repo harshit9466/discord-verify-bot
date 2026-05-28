@@ -7,9 +7,11 @@
 //   3. (Phase 2) DB mein last_left_at update karo
 // ============================================================
 
-const logger = require('../utils/logger');
+const logger      = require('../utils/logger');
 const { getGuildConfig } = require('../config/configManager');
 const { clearState, getState } = require('../utils/stateManager');
+const memberRepo  = require('../db/memberRepository');
+const eventRepo   = require('../db/eventRepository');
 
 module.exports = {
   name: 'guildMemberRemove',
@@ -40,7 +42,12 @@ module.exports = {
       logger.error(`Failed to log leave event:`, { error: err.message });
     }
 
-    // TODO (Phase 2): DB update
-    // await db.updateMember(user.id, guild.id, { lastLeftAt: new Date() });
+    // Update DB: last_left_at + LEAVE event
+    try {
+      await memberRepo.updateMemberOnLeave(user.id, guild.id);
+      await eventRepo.logEvent(user.id, guild.id, 'LEAVE');
+    } catch (err) {
+      logger.error(`DB leave update failed for ${user.tag}:`, { error: err.message });
+    }
   },
 };

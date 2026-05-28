@@ -1,27 +1,11 @@
-// ============================================================
-// GUILD MEMBER ADD — Koi server join karta hai toh yeh fire hota hai
-//
-// Is event mein:
-//   1. @Unverified role assign karo
-//   2. (Phase 2) DB check karo — returning verified member toh auto-verify
-//   3. member.pending check karo:
-//        pending = true  → Discord Membership Screening abhi complete nahi
-//                          Button click nahi ho sakta — message mat bhejo
-//                          guildMemberUpdate.js handle karega jab screening done ho
-//        pending = false → Screening nahi hai ya already done — seedha bhejo
-//   4. Verification log channel mein join note karo
-//
-// Config mein toggle karo:
-//   settings.verificationMode = "dm" | "channel"
-// ============================================================
-
-const logger = require('../utils/logger');
+const logger      = require('../utils/logger');
 const { getGuildConfig } = require('../config/configManager');
-const { initState, updateState } = require('../utils/stateManager');
-const { buildWelcomeEmbed } = require('../utils/embeds');
-const { buildBeginButton } = require('../utils/components');
+const { initState }      = require('../utils/stateManager');
+const { buildWelcomeEmbed, buildAutoVerifyEmbed } = require('../utils/embeds');
+const { buildBeginButton }                         = require('../utils/components');
+const memberRepo  = require('../db/memberRepository');
+const eventRepo   = require('../db/eventRepository');
 
-// sendVerificationMessage export karo — guildMemberUpdate.js bhi use karta hai
 module.exports = {
   name: 'guildMemberAdd',
 
@@ -29,107 +13,162 @@ module.exports = {
     const { guild, user } = member;
     logger.info(`New member joined: ${user.tag} (${user.id}) → Guild: ${guild.name} (${guild.id})`);
 
-    // Load this guild's config
     const config = getGuildConfig(guild.id);
     if (!config) {
-      // Is guild ke liye config file nahi bani — ignore karo
-      logger.debug(`No config for guild ${guild.id}, skipping verification setup`);
+      logger.debug(`No config for guild ${guild.id}, skipping`);
       return;
     }
 
-    // ---- Step 1: @Unverified role assign karo ----
+    // ---- Assign @Unverified ----
     try {
       const unverifiedRole = guild.roles.cache.get(config.roles.unverifiedRoleId);
       if (unverifiedRole) {
         await member.roles.add(unverifiedRole);
-        logger.info(`@Unverified role assigned to ${user.tag}`);
-      } else {
-        logger.warn(`@Unverified role ID "${config.roles.unverifiedRoleId}" not found in guild ${guild.id}`);
+        logger.info(`@Unverified assigned to ${user.tag}`);
       }
     } catch (err) {
-      logger.error(`Failed to assign @Unverified role to ${user.tag}:`, { error: err.message });
+      logger.error(`Failed to assign @Unverified to ${user.tag}:`, { error: err.message });
     }
 
-    // ---- TODO (Phase 2): Returning member check ----
-    // Yahan DB mein check hoga:
-    //   const existing = await db.findMember(user.id, guild.id);
-    //   if (existing?.verificationStatus === 'VERIFIED') {
-    //     return autoVerifyReturningMember(member, existing, config);
-    //   }
+    // ---- Returning member check ----
+    let isAutoVerified = false;
+    try {
+      const existing = await memberRepo.findMember(user.id, guild.id);
+      if (existing?.verification_status === 'VERIFIED') {
+        isAutoVerified = await autoVerifyReturningMember(member, existing, config, guild);
+      }
+    } catch (err) {
+      logger.error(`DB lookup failed for ${user.tag}:`, { error: err.message });
+    }
 
-    // ---- Step 2: Verification state initialize karo ----
+    // ---- Persist join to DB ----
+    try {
+      await memberRepo.upsertMemberOnJoin(user.id, guild.id, user.tag, new Date(member.joinedTimestamp));
+      await eventRepo.logEvent(user.id, guild.id, isAutoVerified ? 'REJOIN' : 'JOIN');
+    } catch (err) {
+      logger.error(`DB upsert failed for ${user.tag}:`, { error: err.message });
+    }
+
+    if (isAutoVerified) return;
+
+    // ---- Normal verification flow ----
     initState(guild.id, user.id);
 
-    // ---- Step 3: Channel mode mein persistent panel handle karta hai ----
-    // Ek baar /setup-verify se panel post ho jaata hai verify channel mein
-    // Ab har member ke liye alag message nahi bhejna — woh khud button click karega
     if (config.settings.verificationMode === 'channel') {
-      await logEvent(guild, config, `📥 **Member Joined:** ${user.tag} (<@${user.id}>) • Account age: <t:${Math.floor(user.createdTimestamp / 1000)}:R>`);
+      await logToChannel(guild, config, `📥 **Member Joined:** ${user.tag} (<@${user.id}>) • Account age: <t:${Math.floor(user.createdTimestamp / 1000)}:R>`);
       return;
     }
 
-    // ---- DM mode: Discord Membership Screening check ----
-    // member.pending = true  → User ne Discord ka native "Accept Rules" screen abhi complete nahi kiya
-    //                          guildMemberUpdate event fire hoga jab woh complete kare
-    // member.pending = false → Screening disabled ya already done — seedha DM bhejo
     if (member.pending) {
-      logger.info(`${user.tag} has Discord membership screening pending — DM will be sent after screening`);
-      await logEvent(guild, config, `📥 **Member Joined (Screening Pending):** ${user.tag} (<@${user.id}>)`);
+      logger.info(`${user.tag} has Discord membership screening pending`);
+      await logToChannel(guild, config, `📥 **Member Joined (Screening Pending):** ${user.tag} (<@${user.id}>)`);
       return;
     }
 
-    // DM mode, no pending: per-user verification DM bhejo
     await sendVerificationMessage(member, config, guild);
-
-    // ---- Step 4: Join log karo ----
-    await logEvent(guild, config, `📥 **Member Joined:** ${user.tag} (<@${user.id}>) • Account age: <t:${Math.floor(user.createdTimestamp / 1000)}:R>`);
+    await logToChannel(guild, config, `📥 **Member Joined:** ${user.tag} (<@${user.id}>) • Account age: <t:${Math.floor(user.createdTimestamp / 1000)}:R>`);
   },
 };
 
 // ============================================================
-// SHARED HELPER — Verification message bhejo (DM ya channel)
-// Yeh function guildMemberAdd aur guildMemberUpdate dono use karte hain
+// AUTO-VERIFY — Returning verified member ka role restore karo
+// ============================================================
+async function autoVerifyReturningMember(member, dbRecord, config, guild) {
+  const roleMap = {
+    'TRAVELER':  config.roles.travelerRoleId,
+    'INITIATE':  config.roles.initiateRoleId,
+    'NSFW_ONLY': config.roles.nsfwOnlyRoleId,
+  };
+
+  const roleId = roleMap[dbRecord.role_assigned];
+  if (!roleId) {
+    logger.warn(`Auto-verify: unknown role_assigned "${dbRecord.role_assigned}" for ${member.user.tag} — falling back to normal flow`);
+    return false;
+  }
+
+  const verifiedRole = guild.roles.cache.get(roleId);
+  if (!verifiedRole) {
+    logger.warn(`Auto-verify: role ${roleId} not found in guild — falling back to normal flow`);
+    return false;
+  }
+
+  // Assign verified role
+  await member.roles.add(verifiedRole).catch(() => {});
+
+  // Assign base role
+  if (config.roles.baseRoleId) {
+    const baseRole = guild.roles.cache.get(config.roles.baseRoleId);
+    if (baseRole) await member.roles.add(baseRole).catch(() => {});
+  }
+
+  // Re-add stored interest/preference roles
+  if (dbRecord.selected_roles) {
+    for (const roleIds of Object.values(dbRecord.selected_roles)) {
+      for (const id of roleIds) {
+        const r = guild.roles.cache.get(id);
+        if (r) await member.roles.add(r).catch(() => {});
+      }
+    }
+  }
+
+  // Remove @Unverified
+  const unverifiedRole = guild.roles.cache.get(config.roles.unverifiedRoleId);
+  if (unverifiedRole) await member.roles.remove(unverifiedRole).catch(() => {});
+
+  // DM user
+  const firstJoinedMs = dbRecord.first_joined_at?.getTime() ?? Date.now();
+  await member.user.send({
+    embeds: [buildAutoVerifyEmbed(guild.name, verifiedRole.name, firstJoinedMs)],
+  }).catch(() => logger.warn(`Could not DM auto-verify to ${member.user.tag}`));
+
+  // Log in #verification-log
+  await logToChannel(guild, config,
+    `⚡ **Auto-Verified (Returning Member):** ${member.user.tag} (<@${member.id}>) → @${verifiedRole.name} | Rejoins: ${dbRecord.rejoin_count}`
+  );
+
+  logger.info(`Auto-verified: ${member.user.tag} → @${verifiedRole.name}`);
+  return true;
+}
+
+// ============================================================
+// SHARED HELPERS
 // ============================================================
 async function sendVerificationMessage(member, config, guild) {
   const mode = config.settings.verificationMode || 'dm';
 
   if (mode === 'channel') {
     await sendToVerifyChannel(member, config, guild);
-  } else {
-    // DM mode
-    try {
-      const dm = await member.user.createDM();
-      await dm.send({
-        embeds:     [buildWelcomeEmbed(config)],
-        components: [buildBeginButton(guild.id, member.id)],
-      });
-      logger.info(`Welcome DM sent to ${member.user.tag}`);
-    } catch {
-      logger.warn(`Could not DM ${member.user.tag} — falling back to verify channel`);
-      await sendToVerifyChannel(member, config, guild, true);
-    }
+    return;
+  }
+
+  try {
+    const dm = await member.user.createDM();
+    await dm.send({
+      embeds:     [buildWelcomeEmbed(config)],
+      components: [buildBeginButton(guild.id, member.id)],
+    });
+    logger.info(`Welcome DM sent to ${member.user.tag}`);
+  } catch {
+    logger.warn(`Could not DM ${member.user.tag} — falling back to verify channel`);
+    await sendToVerifyChannel(member, config, guild, true);
   }
 }
 
-// verifyChannelId mein welcome message bhejo
-// isDmFallback = true → extra note add karo ki DMs enable karo
 async function sendToVerifyChannel(member, config, guild, isDmFallback = false) {
   try {
-    // verifyChannelId prefer karo, fallback welcomeChannelId
     const channelId = (config.channels.verifyChannelId && config.channels.verifyChannelId !== 'PASTE_VERIFY_CHANNEL_ID_HERE')
       ? config.channels.verifyChannelId
       : config.channels.welcomeChannelId;
 
     const channel = guild.channels.cache.get(channelId);
     if (!channel) {
-      logger.warn(`Verify channel not found for guild ${guild.id} — check verifyChannelId in config`);
+      logger.warn(`Verify channel not found for guild ${guild.id}`);
       return;
     }
 
-    let content = `<@${member.id}>`;
-    if (isDmFallback) {
-      content = `<@${member.id}> *(DMs are disabled — verifying here instead)*`;
-    }
+    const content = isDmFallback
+      ? `<@${member.id}> *(DMs are disabled — verifying here instead)*`
+      : `<@${member.id}>`;
 
     await channel.send({
       content,
@@ -137,23 +176,19 @@ async function sendToVerifyChannel(member, config, guild, isDmFallback = false) 
       components: [buildBeginButton(guild.id, member.id)],
     });
 
-    logger.info(`Verification message sent to channel for ${member.user.tag} (${isDmFallback ? 'DM fallback' : 'channel mode'})`);
+    logger.info(`Verification message sent to channel for ${member.user.tag}`);
   } catch (err) {
     logger.error(`Failed to send verification message to channel:`, { error: err.message });
   }
 }
 
-// ---- Helper: Log channel mein event log karo ----
-async function logEvent(guild, config, message) {
+async function logToChannel(guild, config, message) {
   try {
     const logChannel = guild.channels.cache.get(config.channels.logChannelId);
-    if (logChannel) {
-      await logChannel.send({ content: message });
-    }
+    if (logChannel) await logChannel.send({ content: message });
   } catch (err) {
     logger.error(`Failed to log event:`, { error: err.message });
   }
 }
 
-// Export karo taaki guildMemberUpdate.js bhi use kar sake
 module.exports.sendVerificationMessage = sendVerificationMessage;
