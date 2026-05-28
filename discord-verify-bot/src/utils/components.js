@@ -369,25 +369,42 @@ function buildRejectReasonModal(guildId, userId) {
 }
 
 /**
- * Mod panel buttons — Refresh Stats + Notifications + Settings
+ * Mod panel components — returns array of 2 rows:
+ *   Row 1: Refresh | Notifications | Settings | Rejections
+ *   Row 2: Time range select menu
  */
 function buildModPanelComponents(guildId) {
-  const refresh = new ButtonBuilder()
-    .setCustomId(`verif:panel:refresh:${guildId}`)
-    .setLabel('🔄 Refresh Stats')
-    .setStyle(ButtonStyle.Secondary);
+  const row1 = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`verif:panel:refresh:${guildId}`)
+      .setLabel('🔄 Refresh')
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId(`verif:panel:notify:${guildId}`)
+      .setLabel('🔔 Notifications')
+      .setStyle(ButtonStyle.Primary),
+    new ButtonBuilder()
+      .setCustomId(`verif:panel:settings:${guildId}`)
+      .setLabel('⚙️ Settings')
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId(`verif:panel:rejections:${guildId}`)
+      .setLabel('📊 Rejections')
+      .setStyle(ButtonStyle.Secondary),
+  );
 
-  const notify = new ButtonBuilder()
-    .setCustomId(`verif:panel:notify:${guildId}`)
-    .setLabel('🔔 Notifications')
-    .setStyle(ButtonStyle.Primary);
+  const row2 = new ActionRowBuilder().addComponents(
+    new StringSelectMenuBuilder()
+      .setCustomId(`verif:panel:timerange:${guildId}`)
+      .setPlaceholder('📅 Stats time range...')
+      .addOptions(
+        new StringSelectMenuOptionBuilder().setValue('7').setLabel('Last 7 Days').setEmoji('📅'),
+        new StringSelectMenuOptionBuilder().setValue('30').setLabel('Last 30 Days').setEmoji('📆'),
+        new StringSelectMenuOptionBuilder().setValue('0').setLabel('All Time').setEmoji('♾️'),
+      ),
+  );
 
-  const settings = new ButtonBuilder()
-    .setCustomId(`verif:panel:settings:${guildId}`)
-    .setLabel('⚙️ Settings')
-    .setStyle(ButtonStyle.Secondary);
-
-  return new ActionRowBuilder().addComponents(refresh, notify, settings);
+  return [row1, row2];
 }
 
 /**

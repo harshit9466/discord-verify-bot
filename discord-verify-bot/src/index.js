@@ -110,9 +110,10 @@ client.once('ready', async () => {
           statsRepo.getStats(guildId, 7),
           modSubRepo.getEnabledCount(guildId),
         ]);
+        const days = config.panelTimeRange ?? 7;
         await msg.edit({
-          embeds:     [embeds.buildModPanelEmbed(stats, subscriberCount)],
-          components: [components.buildModPanelComponents(guildId)],
+          embeds:     [embeds.buildModPanelEmbed(stats, subscriberCount, days)],
+          components: components.buildModPanelComponents(guildId),
         });
         logger.info(`Mod panel auto-refreshed for guild ${guildId}`);
       } catch (err) {

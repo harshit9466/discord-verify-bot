@@ -400,11 +400,13 @@ function buildRejectedLogEmbed(member, modUser, reason) {
 /**
  * Mod panel embed — #mod-panel mein pinned rehta hai, stats + subscriber count dikhata hai
  */
-function buildModPanelEmbed(stats, subscriberCount) {
-  const avgTime = stats.avgVerifyHours > 0 ? `${stats.avgVerifyHours}h` : 'N/A';
+function buildModPanelEmbed(stats, subscriberCount, days = 7) {
+  const avgTime    = stats.avgVerifyHours > 0 ? `${stats.avgVerifyHours}h` : 'N/A';
+  const rangeLabel = days === 0 ? 'All Time' : `Last ${days} Days`;
   return new EmbedBuilder()
     .setColor(COLORS.BLURPLE)
     .setTitle('🤖 VerifyBot — Mod Panel')
+    .setDescription(`📅 Showing: **${rangeLabel}**`)
     .addFields(
       // Row 1 — activity (last 7 days)
       { name: '📥 Joins (7d)',      value: `**${stats.joins}**`,        inline: true },
@@ -422,6 +424,21 @@ function buildModPanelEmbed(stats, subscriberCount) {
       { name: '🔔 Subscribed Mods', value: `**${subscriberCount}**`,          inline: true },
     )
     .setFooter({ text: 'Last refreshed' })
+    .setTimestamp();
+}
+
+/**
+ * Rejection reasons breakdown — ephemeral, shown from mod panel
+ */
+function buildRejectionStatsEmbed(reasons, days) {
+  const rangeLabel = days === 0 ? 'All Time' : `Last ${days} Days`;
+  const desc = reasons.length === 0
+    ? '_No rejections recorded in this period._'
+    : reasons.map((r, i) => `**${i + 1}.** ${r.reason} — \`${r.count}×\``).join('\n');
+  return new EmbedBuilder()
+    .setColor(COLORS.RED)
+    .setTitle(`📊 Top Rejection Reasons — ${rangeLabel}`)
+    .setDescription(desc)
     .setTimestamp();
 }
 
@@ -513,6 +530,7 @@ module.exports = {
   buildVerifiedLogEmbed,
   buildRejectedLogEmbed,
   buildModPanelEmbed,
+  buildRejectionStatsEmbed,
   buildReminderDMEmbed,
   buildKickDMEmbed,
   buildVerifSettingsEmbed,

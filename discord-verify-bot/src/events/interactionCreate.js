@@ -62,7 +62,8 @@ async function handleButton(interaction, parts) {
 }
 
 async function handleSelectMenu(interaction, parts) {
-  if (parts[1] === 'select') await step_roleSelect(interaction, parts);
+  if      (parts[1] === 'select') await step_roleSelect(interaction, parts);
+  else if (parts[1] === 'panel')  await panel_action(interaction, parts);
 }
 
 async function handleModalSubmit(interaction, parts) {
@@ -679,23 +680,57 @@ async function panel_action(interaction, parts) {
   else if (sub === 'stg-kick')      await panel_toggleSetting(interaction, guildId, 'autoKickEnabled');
   else if (sub === 'stg-invite')    await panel_toggleSetting(interaction, guildId, 'kickInviteEnabled');
   else if (sub === 'stg-edit')      await panel_editSettings(interaction, guildId);
+  else if (sub === 'timerange')     await panel_timeRange(interaction, guildId);
+  else if (sub === 'rejections')    await panel_showRejections(interaction, guildId);
 }
 
 async function panel_refresh(interaction, guildId) {
   await interaction.deferUpdate();
   try {
+    const config = getGuildConfig(guildId);
+    const days   = config?.panelTimeRange ?? 7;
     const [stats, subscriberCount] = await Promise.all([
-      statsRepo.getStats(guildId, 7),
+      statsRepo.getStats(guildId, days),
       modSubRepo.getEnabledCount(guildId),
     ]);
     await interaction.editReply({
-      embeds:     [embeds.buildModPanelEmbed(stats, subscriberCount)],
-      components: [components.buildModPanelComponents(guildId)],
+      embeds:     [embeds.buildModPanelEmbed(stats, subscriberCount, days)],
+      components: components.buildModPanelComponents(guildId),
     });
   } catch (err) {
     logger.error('Panel refresh failed:', { error: err.message });
     await interaction.followUp({ content: 'Failed to refresh stats.', flags: MessageFlags.Ephemeral }).catch(() => {});
   }
+}
+
+async function panel_timeRange(interaction, guildId) {
+  await interaction.deferUpdate();
+  try {
+    const days   = parseInt(interaction.values[0]);
+    const config = getGuildConfig(guildId);
+    if (config) config.panelTimeRange = days;
+    const [stats, subscriberCount] = await Promise.all([
+      statsRepo.getStats(guildId, days),
+      modSubRepo.getEnabledCount(guildId),
+    ]);
+    await interaction.editReply({
+      embeds:     [embeds.buildModPanelEmbed(stats, subscriberCount, days)],
+      components: components.buildModPanelComponents(guildId),
+    });
+  } catch (err) {
+    logger.error('Panel time range failed:', { error: err.message });
+    await interaction.followUp({ content: 'Failed to update stats.', flags: MessageFlags.Ephemeral }).catch(() => {});
+  }
+}
+
+async function panel_showRejections(interaction, guildId) {
+  const config  = getGuildConfig(guildId);
+  const days    = config?.panelTimeRange ?? 7;
+  const reasons = await statsRepo.getTopRejectionReasons(guildId, days).catch(() => []);
+  await interaction.reply({
+    embeds: [embeds.buildRejectionStatsEmbed(reasons, days)],
+    flags:  MessageFlags.Ephemeral,
+  });
 }
 
 async function panel_showNotifyPrefs(interaction, guildId) {
@@ -867,8 +902,8 @@ async function cmd_setupModPanel(interaction) {
     ]);
 
     const panelMsg = await interaction.channel.send({
-      embeds:     [embeds.buildModPanelEmbed(stats, subscriberCount)],
-      components: [components.buildModPanelComponents(guildId)],
+      embeds:     [embeds.buildModPanelEmbed(stats, subscriberCount, 7)],
+      components: components.buildModPanelComponents(guildId),
     });
 
     await panelMsg.pin().catch(() => logger.warn('Could not pin mod panel — pin it manually'));
