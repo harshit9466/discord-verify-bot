@@ -410,8 +410,9 @@ function buildModPanelEmbed(stats, subscriberCount) {
         name:  '📊 Stats — Last 7 Days',
         value: `**Joins:** ${stats.joins}  ·  **Verified:** ${stats.verified}  ·  **Rejected:** ${stats.rejected}\n**Auto-Verified:** ${stats.autoVerified}  ·  **Avg Verify Time:** ${avgTime}`,
       },
-      { name: '👥 Currently Unverified', value: `${stats.totalUnverified} members`, inline: true },
-      { name: '🔔 Subscribed Mods',      value: `${subscriberCount}`,               inline: true },
+      { name: '👥 Not Started',        value: `${stats.totalUnverified} members`,    inline: true },
+      { name: '⏳ Pending Review',     value: `${stats.totalPendingReview} members`, inline: true },
+      { name: '🔔 Subscribed Mods',    value: `${subscriberCount}`,                 inline: true },
     )
     .setFooter({ text: 'Last refreshed' })
     .setTimestamp();

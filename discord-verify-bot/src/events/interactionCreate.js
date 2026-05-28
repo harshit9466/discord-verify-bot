@@ -639,6 +639,8 @@ async function postToModQueue(interaction, guildId, userId, state) {
 
     updateState(guildId, userId, { modMessageId: modMsg.id });
 
+    memberRepo.updateMemberStatus(userId, guildId, 'AWAITING_MOD').catch(() => {});
+
     const logChannel = guild.channels.cache.get(config.channels.logChannelId);
     if (logChannel) {
       await logChannel.send({ content: 'Intro Submitted: ' + interaction.user.tag + ' — awaiting mod review' });
