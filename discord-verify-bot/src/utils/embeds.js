@@ -406,13 +406,20 @@ function buildModPanelEmbed(stats, subscriberCount) {
     .setColor(COLORS.BLURPLE)
     .setTitle('🤖 VerifyBot — Mod Panel')
     .addFields(
-      {
-        name:  '📊 Stats — Last 7 Days',
-        value: `**Joins:** ${stats.joins}  ·  **Verified:** ${stats.verified}  ·  **Rejected:** ${stats.rejected}\n**Auto-Verified:** ${stats.autoVerified}  ·  **Avg Verify Time:** ${avgTime}`,
-      },
-      { name: '👥 Not Started',        value: `${stats.totalUnverified} members`,    inline: true },
-      { name: '⏳ Pending Review',     value: `${stats.totalPendingReview} members`, inline: true },
-      { name: '🔔 Subscribed Mods',    value: `${subscriberCount}`,                 inline: true },
+      // Row 1 — activity (last 7 days)
+      { name: '📥 Joins (7d)',      value: `**${stats.joins}**`,        inline: true },
+      { name: '✅ Verified',        value: `**${stats.verified}**`,     inline: true },
+      { name: '❌ Rejected',        value: `**${stats.rejected}**`,     inline: true },
+      // Row 2 — timing (blank fills 3rd slot to keep grid even)
+      { name: '⚡ Auto-Verified',   value: `**${stats.autoVerified}**`, inline: true },
+      { name: '⏱️ Avg Verify Time', value: `**${avgTime}**`,            inline: true },
+      { name: '​',             value: '​',                    inline: true },
+      // Divider
+      { name: '​',             value: '──────────────────────',    inline: false },
+      // Row 3 — current queue status
+      { name: '👥 Not Started',     value: `**${stats.totalUnverified}**`,    inline: true },
+      { name: '⏳ Pending Review',  value: `**${stats.totalPendingReview}**`, inline: true },
+      { name: '🔔 Subscribed Mods', value: `**${subscriberCount}**`,          inline: true },
     )
     .setFooter({ text: 'Last refreshed' })
     .setTimestamp();
