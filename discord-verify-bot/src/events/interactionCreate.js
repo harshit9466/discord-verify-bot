@@ -58,6 +58,7 @@ async function handleButton(interaction, parts) {
   else if (action === 'intro')   await step_openIntroModal(interaction, parts);
   else if (action === 'kinks')   await step_kinks(interaction, parts);
   else if (action === 'edit')    await step_edit(interaction, parts);
+  else if (action === 'keepcat') await step_keepCategory(interaction, parts);
   else if (action === 'mod')     await mod_action(interaction, parts);
   else if (action === 'panel')   await panel_action(interaction, parts);
 }
@@ -215,7 +216,7 @@ async function step_edit(interaction, parts) {
       embeds: [embeds.buildRoleSelectionEmbed(config, 0)],
       components: [
         components.buildRoleSelectMenu(config, 0, guildId, userId, currentSelections),
-        components.buildEditBackButton(guildId, userId),
+        components.buildEditRoleButtons(guildId, userId, 0),
       ],
     });
 
@@ -230,6 +231,47 @@ async function step_edit(interaction, parts) {
     await interaction.update({ embeds: [embeds.buildPendingEmbed()], components: [] });
     await postToModQueue(interaction, guildId, userId, await getState(guildId, userId));
   }
+}
+
+// ============================================================
+// KEEP CATEGORY: Edit mode mein category skip karna (selection unchanged)
+// Discord select menu tab event fire nahi karta jab selection na badle —
+// isliye yeh button zaroori hai taaki user bina change ke aage badh sake.
+// customId: verif:keepcat:{categoryIndex}:{guildId}:{userId}
+// ============================================================
+async function step_keepCategory(interaction, parts) {
+  const categoryIndex = parseInt(parts[2]);
+  const guildId = parts[3];
+  const userId  = parts[4];
+
+  if (interaction.user.id !== userId) {
+    return interaction.reply({ content: 'This is not your verification.', flags: MessageFlags.Ephemeral });
+  }
+
+  const config = getGuildConfig(guildId);
+  const state  = await getState(guildId, userId);
+  if (!state) {
+    return interaction.reply({ content: 'Session expired. Please click the verification button again.', flags: MessageFlags.Ephemeral });
+  }
+
+  const isLastCategory = categoryIndex >= config.roleCategories.length - 1;
+
+  if (isLastCategory) {
+    return interaction.update({
+      embeds:     [embeds.buildEditMenuEmbed(state, config)],
+      components: components.buildEditMenuButtons(guildId, userId, config),
+    });
+  }
+
+  const nextIndex = categoryIndex + 1;
+  const nextSelections = state.selectedRoles?.[nextIndex] ?? [];
+  return interaction.update({
+    embeds:     [embeds.buildRoleSelectionEmbed(config, nextIndex)],
+    components: [
+      components.buildRoleSelectMenu(config, nextIndex, guildId, userId, nextSelections),
+      components.buildEditRoleButtons(guildId, userId, nextIndex),
+    ],
+  });
 }
 
 // ============================================================
@@ -296,7 +338,7 @@ async function step_roleSelect(interaction, parts) {
     const nextIndex = categoryIndex + 1;
     const nextSelections = state.selectedRoles?.[nextIndex] ?? [];
     const comps = [components.buildRoleSelectMenu(config, nextIndex, guildId, userId, nextSelections)];
-    if (state.step === STEPS.EDIT_MENU) comps.push(components.buildEditBackButton(guildId, userId));
+    if (state.step === STEPS.EDIT_MENU) comps.push(components.buildEditRoleButtons(guildId, userId, nextIndex));
     return interaction.update({
       embeds:     [embeds.buildRoleSelectionEmbed(config, nextIndex)],
       components: comps,

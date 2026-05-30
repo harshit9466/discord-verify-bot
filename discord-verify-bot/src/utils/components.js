@@ -559,10 +559,29 @@ function buildEditMenuButtons(guildId, userId, config) {
 }
 
 /**
- * "← Back to Edit Menu" button — role/content selection ke baad wapas jaane ke liye
+ * "← Back to Edit Menu" button — content pref selection ke baad wapas jaane ke liye
  */
 function buildEditBackButton(guildId, userId) {
   return new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`verif:edit:back:${guildId}:${userId}`)
+      .setLabel('← Back to Edit Menu')
+      .setStyle(ButtonStyle.Secondary),
+  );
+}
+
+/**
+ * Role category navigation buttons in edit mode
+ * "Keep & Continue →" — selection same rakhke aage badhne ke liye (Discord menu tab fire nahi karta jab selection na badle)
+ * "← Back to Edit Menu" — kisi bhi stage pe edit menu pe wapas
+ * customId: verif:keepcat:{categoryIndex}:{guildId}:{userId}
+ */
+function buildEditRoleButtons(guildId, userId, categoryIndex) {
+  return new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`verif:keepcat:${categoryIndex}:${guildId}:${userId}`)
+      .setLabel('Keep & Continue →')
+      .setStyle(ButtonStyle.Primary),
     new ButtonBuilder()
       .setCustomId(`verif:edit:back:${guildId}:${userId}`)
       .setLabel('← Back to Edit Menu')
@@ -643,5 +662,6 @@ module.exports = {
   buildVerifSettingsModal,
   buildEditMenuButtons,
   buildEditBackButton,
+  buildEditRoleButtons,
   buildEditConfigModal,
 };
