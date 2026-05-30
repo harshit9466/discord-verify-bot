@@ -540,6 +540,48 @@ function buildErrorEmbed(message) {
     .setTimestamp();
 }
 
+/**
+ * Edit menu embed — user apne pending submission ke specific parts edit kar sake
+ */
+function buildEditMenuEmbed(state, config) {
+  const intro = state?.intro ?? {};
+  const pref  = state?.contentPreference;
+
+  const prefLabels = { SFW: '🌞 SFW Only', NSFW: '🌗 SFW + NSFW', NSFW_ONLY: '🔞 NSFW Only' };
+
+  const fields = [
+    { name: '📛 Name',    value: intro.displayName || '_not set_', inline: true },
+    { name: '🎂 Age',     value: String(intro.age  || '_not set_'), inline: true },
+    { name: '📍 Location', value: intro.location   || '_not set_', inline: true },
+    { name: '🎭 Content Preference', value: prefLabels[pref] || '_not set_', inline: true },
+    { name: '🔞 Kinks',       value: intro.kinks      ? '✅ Provided' : '_not provided_', inline: true },
+    { name: '🚫 Hard Limits', value: intro.hardLimits ? '✅ Provided' : '_not provided_', inline: true },
+    {
+      name:  '📝 About You',
+      value: intro.aboutYou
+        ? (intro.aboutYou.length > 120 ? intro.aboutYou.slice(0, 120) + '…' : intro.aboutYou)
+        : '_not set_',
+      inline: false,
+    },
+  ];
+
+  if (config?.settings?.requireRoleSelection && state?.selectedRoles) {
+    const allIds = Object.values(state.selectedRoles).flat();
+    fields.push({
+      name:  '🏷️ Selected Roles',
+      value: allIds.length > 0 ? allIds.map(id => `<@&${id}>`).join(', ') : '_none_',
+      inline: false,
+    });
+  }
+
+  return new EmbedBuilder()
+    .setColor(0x5865F2)
+    .setTitle('✏️ Edit Your Submission')
+    .setDescription('Select what you\'d like to change. Click **Submit** when you\'re ready to resubmit.')
+    .addFields(fields)
+    .setFooter({ text: 'Only the sections you edit will change — the rest stays as-is.' });
+}
+
 module.exports = {
   buildWelcomeEmbed,
   buildVerifyPanelEmbed,
@@ -561,5 +603,6 @@ module.exports = {
   buildReminderDMEmbed,
   buildKickDMEmbed,
   buildVerifSettingsEmbed,
+  buildEditMenuEmbed,
   buildErrorEmbed,
 };

@@ -213,7 +213,7 @@ function buildModQueueButtons(guildId, userId) {
  * Fields: displayName, age, howFound, aboutYou
  * Kinks + hard limits → separate skippable Part 2 (buildKinksModal)
  */
-function buildIntroModal(guildId, userId) {
+function buildIntroModal(guildId, userId, prefill = {}) {
   const modal = new ModalBuilder()
     .setCustomId(`verif:modal:intro:${guildId}:${userId}`)
     .setTitle('Your Introduction');
@@ -226,6 +226,7 @@ function buildIntroModal(guildId, userId) {
     .setMinLength(2)
     .setMaxLength(32)
     .setRequired(true);
+  if (prefill.displayName) displayName.setValue(prefill.displayName);
 
   const age = new TextInputBuilder()
     .setCustomId('age')
@@ -235,6 +236,7 @@ function buildIntroModal(guildId, userId) {
     .setMinLength(1)
     .setMaxLength(3)
     .setRequired(true);
+  if (prefill.age) age.setValue(String(prefill.age));
 
   const howFound = new TextInputBuilder()
     .setCustomId('howFound')
@@ -244,6 +246,7 @@ function buildIntroModal(guildId, userId) {
     .setMinLength(2)
     .setMaxLength(200)
     .setRequired(true);
+  if (prefill.howFound) howFound.setValue(prefill.howFound);
 
   const aboutYou = new TextInputBuilder()
     .setCustomId('aboutYou')
@@ -253,6 +256,7 @@ function buildIntroModal(guildId, userId) {
     .setMinLength(10)
     .setMaxLength(1000)
     .setRequired(true);
+  if (prefill.aboutYou) aboutYou.setValue(prefill.aboutYou);
 
   const location = new TextInputBuilder()
     .setCustomId('location')
@@ -261,6 +265,7 @@ function buildIntroModal(guildId, userId) {
     .setPlaceholder('City, Country — e.g. Mumbai, India or just "India"')
     .setMaxLength(100)
     .setRequired(false);
+  if (prefill.location) location.setValue(prefill.location);
 
   modal.addComponents(
     new ActionRowBuilder().addComponents(displayName),
@@ -277,7 +282,7 @@ function buildIntroModal(guildId, userId) {
  * Kinks & Hard Limits modal — skippable Part 2
  * Both fields optional — user can submit blank
  */
-function buildKinksModal(guildId, userId) {
+function buildKinksModal(guildId, userId, prefill = {}) {
   const modal = new ModalBuilder()
     .setCustomId(`verif:modal:kinks:${guildId}:${userId}`)
     .setTitle('Kinks & Hard Limits (Optional)');
@@ -289,6 +294,7 @@ function buildKinksModal(guildId, userId) {
     .setPlaceholder('List any kinks you have... leave blank to skip')
     .setMaxLength(500)
     .setRequired(false);
+  if (prefill.kinks) kinks.setValue(prefill.kinks);
 
   const hardLimits = new TextInputBuilder()
     .setCustomId('hardLimits')
@@ -297,6 +303,7 @@ function buildKinksModal(guildId, userId) {
     .setPlaceholder('Things you absolutely do not engage with... leave blank to skip')
     .setMaxLength(500)
     .setRequired(false);
+  if (prefill.hardLimits) hardLimits.setValue(prefill.hardLimits);
 
   modal.addComponents(
     new ActionRowBuilder().addComponents(kinks),
@@ -512,6 +519,46 @@ function buildIntroChannelButtons(userId) {
 }
 
 /**
+ * Edit menu buttons — user selects which section to edit
+ * Row 1: Edit Profile | Edit Kinks | Edit Content Pref
+ * Row 2: Edit Roles (conditional) | Submit
+ */
+function buildEditMenuButtons(guildId, userId, config) {
+  const row1 = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`verif:edit:profile:${guildId}:${userId}`)
+      .setLabel('✏️ Edit Profile')
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId(`verif:edit:kinks:${guildId}:${userId}`)
+      .setLabel('🔞 Edit Kinks & Limits')
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId(`verif:edit:content:${guildId}:${userId}`)
+      .setLabel('🎭 Edit Content Pref')
+      .setStyle(ButtonStyle.Secondary),
+  );
+
+  const row2Buttons = [];
+  if (config?.settings?.requireRoleSelection && config.roleCategories?.length > 0) {
+    row2Buttons.push(
+      new ButtonBuilder()
+        .setCustomId(`verif:edit:roles:${guildId}:${userId}`)
+        .setLabel('🏷️ Edit Roles')
+        .setStyle(ButtonStyle.Secondary),
+    );
+  }
+  row2Buttons.push(
+    new ButtonBuilder()
+      .setCustomId(`verif:edit:submit:${guildId}:${userId}`)
+      .setLabel('✅ Submit Intro')
+      .setStyle(ButtonStyle.Success),
+  );
+
+  return [row1, new ActionRowBuilder().addComponents(...row2Buttons)];
+}
+
+/**
  * Edit config modal — welcome title/desc + rules title/text
  * Pre-filled with current values from in-memory config
  */
@@ -582,5 +629,6 @@ module.exports = {
   buildNotifyToggleButton,
   buildVerifSettingsComponents,
   buildVerifSettingsModal,
+  buildEditMenuButtons,
   buildEditConfigModal,
 };

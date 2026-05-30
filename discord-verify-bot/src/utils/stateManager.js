@@ -16,6 +16,7 @@ const STEPS = {
   ROLES:       'ROLES',
   CONTENT:     'CONTENT',
   INTRO:       'INTRO',
+  EDIT_MENU:   'EDIT_MENU',
   PENDING:     'PENDING',
   VERIFIED:    'VERIFIED',
   REJECTED:    'REJECTED',

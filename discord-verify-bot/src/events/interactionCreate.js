@@ -57,6 +57,7 @@ async function handleButton(interaction, parts) {
   else if (action === 'content') await step_content(interaction, parts);
   else if (action === 'intro')   await step_openIntroModal(interaction, parts);
   else if (action === 'kinks')   await step_kinks(interaction, parts);
+  else if (action === 'edit')    await step_edit(interaction, parts);
   else if (action === 'mod')     await mod_action(interaction, parts);
   else if (action === 'panel')   await panel_action(interaction, parts);
 }
@@ -160,15 +161,62 @@ async function step_restart(interaction, parts) {
 
   const previousIntro = state?.intro ?? null;
 
-  await initState(guildId, userId);
-  const restartUpdates = { step: STEPS.RULES };
-  if (previousIntro) restartUpdates.previousIntro = previousIntro;
-  await updateState(guildId, userId, restartUpdates);
+  // Don't wipe state — preserve intro/roles/contentPref so user only edits what they want
+  await updateState(guildId, userId, {
+    step: STEPS.EDIT_MENU,
+    ...(previousIntro ? { previousIntro } : {}),
+  });
 
   await interaction.update({
-    embeds:     [embeds.buildRulesEmbed(config)],
-    components: [components.buildRulesButtons(guildId, userId)],
+    embeds:     [embeds.buildEditMenuEmbed(state, config)],
+    components: components.buildEditMenuButtons(guildId, userId, config),
   });
+}
+
+// ============================================================
+// EDIT MENU: Selective field editing for pending submissions
+// ============================================================
+async function step_edit(interaction, parts) {
+  const sub     = parts[2];
+  const guildId = parts[3];
+  const userId  = parts[4];
+
+  if (interaction.user.id !== userId) {
+    return interaction.reply({ content: 'This is not your verification.', flags: MessageFlags.Ephemeral });
+  }
+
+  const config = getGuildConfig(guildId);
+  const state  = await getState(guildId, userId);
+  if (!state) {
+    return interaction.reply({ content: 'Session expired. Please click the verification button again.', flags: MessageFlags.Ephemeral });
+  }
+
+  if (sub === 'profile') {
+    await interaction.showModal(components.buildIntroModal(guildId, userId, state.intro ?? {}));
+
+  } else if (sub === 'kinks') {
+    await interaction.showModal(components.buildKinksModal(guildId, userId, {
+      kinks:      state.intro?.kinks      ?? '',
+      hardLimits: state.intro?.hardLimits ?? '',
+    }));
+
+  } else if (sub === 'content') {
+    await interaction.update({
+      embeds:     [embeds.buildContentPrefEmbed(config)],
+      components: [components.buildContentPrefButtons(guildId, userId, config.settings.nsfwEnabled)],
+    });
+
+  } else if (sub === 'roles') {
+    await interaction.update({
+      embeds:     [embeds.buildRoleSelectionEmbed(config, 0)],
+      components: [components.buildRoleSelectMenu(config, 0, guildId, userId)],
+    });
+
+  } else if (sub === 'submit') {
+    await updateState(guildId, userId, { step: STEPS.PENDING });
+    await interaction.update({ embeds: [embeds.buildPendingEmbed()], components: [] });
+    await postToModQueue(interaction, guildId, userId, await getState(guildId, userId));
+  }
 }
 
 // ============================================================
@@ -239,6 +287,14 @@ async function step_roleSelect(interaction, parts) {
     });
   }
 
+  if (state.step === STEPS.EDIT_MENU) {
+    const updatedState = await getState(guildId, userId);
+    return interaction.update({
+      embeds:     [embeds.buildEditMenuEmbed(updatedState, config)],
+      components: components.buildEditMenuButtons(guildId, userId, config),
+    });
+  }
+
   await showContentPreference(interaction, guildId, userId, config);
 }
 
@@ -256,6 +312,17 @@ async function step_content(interaction, parts) {
 
   let state = await getState(guildId, userId);
   if (!state) state = await initState(guildId, userId);
+
+  const config = getGuildConfig(guildId);
+
+  if (state.step === STEPS.EDIT_MENU) {
+    await updateState(guildId, userId, { contentPreference: pref });
+    const updatedState = await getState(guildId, userId);
+    return interaction.update({
+      embeds:     [embeds.buildEditMenuEmbed(updatedState, config)],
+      components: components.buildEditMenuButtons(guildId, userId, config),
+    });
+  }
 
   await updateState(guildId, userId, { step: STEPS.INTRO, contentPreference: pref });
 
@@ -298,14 +365,17 @@ async function step_introSubmit(interaction, parts) {
     return interaction.reply({ content: 'Session expired. Please click the verification button again.', flags: MessageFlags.Ephemeral });
   }
 
+  const isEditMode = state.step === STEPS.EDIT_MENU;
+
   const intro = {
     displayName: interaction.fields.getTextInputValue('displayName').trim(),
     age:         interaction.fields.getTextInputValue('age').trim(),
     location:    interaction.fields.getTextInputValue('location')?.trim() || null,
     howFound:    interaction.fields.getTextInputValue('howFound').trim(),
     aboutYou:    interaction.fields.getTextInputValue('aboutYou').trim(),
-    kinks:       null,
-    hardLimits:  null,
+    // Edit mode: preserve existing kinks — user only edited profile section
+    kinks:      isEditMode ? (state.intro?.kinks      ?? null) : null,
+    hardLimits: isEditMode ? (state.intro?.hardLimits ?? null) : null,
   };
 
   const ageNum = parseInt(intro.age);
@@ -314,6 +384,15 @@ async function step_introSubmit(interaction, parts) {
   }
 
   await updateState(guildId, userId, { intro });
+
+  if (isEditMode) {
+    const updatedState = await getState(guildId, userId);
+    const config = getGuildConfig(guildId);
+    return interaction.update({
+      embeds:     [embeds.buildEditMenuEmbed(updatedState, config)],
+      components: components.buildEditMenuButtons(guildId, userId, config),
+    });
+  }
 
   await interaction.reply({
     embeds:     [embeds.buildKinksStepEmbed()],
@@ -368,6 +447,18 @@ async function step_kinksSubmit(interaction, parts) {
   const kinks      = interaction.fields.getTextInputValue('kinks')?.trim()      || null;
   const hardLimits = interaction.fields.getTextInputValue('hardLimits')?.trim() || null;
   const updatedIntro = { ...state.intro, kinks, hardLimits };
+
+  const isEditMode = state.step === STEPS.EDIT_MENU;
+
+  if (isEditMode) {
+    await updateState(guildId, userId, { intro: updatedIntro });
+    const updatedState = await getState(guildId, userId);
+    const config = getGuildConfig(guildId);
+    return interaction.update({
+      embeds:     [embeds.buildEditMenuEmbed(updatedState, config)],
+      components: components.buildEditMenuButtons(guildId, userId, config),
+    });
+  }
 
   await updateState(guildId, userId, { step: STEPS.PENDING, intro: updatedIntro });
 
