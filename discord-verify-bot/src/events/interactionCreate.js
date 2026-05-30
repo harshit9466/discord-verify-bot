@@ -403,11 +403,6 @@ async function mod_action(interaction, parts) {
 
   if (subAction === 'approve') {
     await interaction.deferUpdate();
-    // Disable buttons immediately (double-click protection) — message will be deleted after processing
-    await interaction.editReply({
-      embeds:     interaction.message.embeds,
-      components: [components.buildModQueueButtonsDisabled(guildId, userId)],
-    });
     await mod_approve(interaction, guildId, userId, config);
   } else if (subAction === 'reject') {
     await interaction.showModal(components.buildRejectReasonModal(guildId, userId));
@@ -416,16 +411,16 @@ async function mod_action(interaction, parts) {
 
 async function mod_approve(interaction, guildId, userId, config) {
   const guild = interaction.client.guilds.cache.get(guildId);
-  if (!guild) return interaction.editReply({ content: 'Guild not found.' });
-
-  // Capture before any async ops — interaction.message may become stale mid-flow
-  const modQueueChannelId = interaction.message.channelId;
-  const modQueueMessageId = interaction.message.id;
+  if (!guild) return interaction.followUp({ content: 'Guild not found.', flags: MessageFlags.Ephemeral });
 
   try {
-    const member = await guild.members.fetch(userId);
-    const state  = await getState(guildId, userId);
-    const pref   = state?.contentPreference ?? 'SFW';
+    // Fetch member and state in parallel — two independent network calls
+    const [member, state] = await Promise.all([
+      guild.members.fetch(userId),
+      getState(guildId, userId),
+    ]);
+
+    const pref = state?.contentPreference ?? 'SFW';
 
     let roleId, roleName;
     if (pref === 'NSFW_ONLY') {
@@ -439,80 +434,73 @@ async function mod_approve(interaction, guildId, userId, config) {
       roleName = 'Traveler';
     }
 
-    const allContentRoleIds = [
+    // Compute final role set in memory — single roles.set() replaces 8-15 sequential add/remove calls
+    const toRemoveIds = new Set([
       config.roles.travelerRoleId,
       config.roles.initiateRoleId,
       config.roles.nsfwOnlyRoleId,
+      config.roles.unverifiedRoleId,
+      config.roles.verificationPendingRoleId,
+    ].filter(Boolean));
+
+    const toAddIds = [
+      roleId,
+      config.roles.baseRoleId,
+      ...(state?.selectedRoles ? Object.values(state.selectedRoles).flat() : []),
     ].filter(Boolean);
 
-    for (const rId of allContentRoleIds) {
-      if (member.roles.cache.has(rId)) await member.roles.remove(rId).catch(() => {});
-    }
+    const finalRoleIds = [
+      ...new Set([
+        ...member.roles.cache.filter(r => !toRemoveIds.has(r.id)).map(r => r.id),
+        ...toAddIds,
+      ]),
+    ];
 
-    if (roleId) {
-      const verifiedRole = guild.roles.cache.get(roleId);
-      if (verifiedRole) {
-        await member.roles.add(verifiedRole);
-      } else {
-        logger.warn('Role ID ' + roleId + ' not found in guild ' + guildId);
-      }
-    }
+    await member.roles.set(finalRoleIds);
 
-    if (config.roles.baseRoleId) {
-      const baseRole = guild.roles.cache.get(config.roles.baseRoleId);
-      if (baseRole) await member.roles.add(baseRole).catch(() => {});
-    }
+    // All remaining ops are independent — run in parallel
+    await Promise.all([
+      member.user.send({
+        embeds: [embeds.buildApprovedEmbed(guild.name, roleName)],
+      }).catch(() => logger.warn('Could not DM approval to ' + member.user.tag)),
 
-    const unverifiedRole = guild.roles.cache.get(config.roles.unverifiedRoleId);
-    const pendingRole    = guild.roles.cache.get(config.roles.verificationPendingRoleId);
-    if (unverifiedRole) await member.roles.remove(unverifiedRole).catch(() => {});
-    if (pendingRole)    await member.roles.remove(pendingRole).catch(() => {});
-
-    if (state?.selectedRoles) {
-      for (const [, roleIds] of Object.entries(state.selectedRoles)) {
-        for (const id of roleIds) {
-          const role = guild.roles.cache.get(id);
-          if (role) await member.roles.add(role).catch(() => {});
+      (async () => {
+        if (state?.intro && config.channels.introChannelId) {
+          const introChannel = guild.channels.cache.get(config.channels.introChannelId);
+          if (introChannel) {
+            await introChannel.send({
+              embeds:     [embeds.buildPublicIntroEmbed(member, state, config)],
+              components: [components.buildIntroChannelButtons(userId)],
+            }).catch(() => {});
+          }
         }
-      }
-    }
+      })(),
 
-    await member.user.send({
-      embeds: [embeds.buildApprovedEmbed(guild.name, roleName)],
-    }).catch(() => logger.warn('Could not DM approval to ' + member.user.tag));
+      // interaction.message IS the mod queue message — no need to re-fetch
+      interaction.message.delete().catch(err =>
+        logger.warn('Could not delete mod queue message: ' + err.message)
+      ),
 
-    if (state?.intro && config.channels.introChannelId) {
-      const introChannel = guild.channels.cache.get(config.channels.introChannelId);
-      if (introChannel) {
-        await introChannel.send({
-          embeds:     [embeds.buildPublicIntroEmbed(member, state, config)],
-          components: [components.buildIntroChannelButtons(userId)],
-        }).catch(() => {});
-      }
-    }
+      (async () => {
+        const verifiedLogChannel = guild.channels.cache.get(config.channels.verifiedLogChannelId);
+        if (verifiedLogChannel) {
+          await verifiedLogChannel.send({
+            embeds: [embeds.buildVerifiedLogEmbed(member, interaction.user, roleName)],
+          }).catch(() => {});
+        }
+      })(),
 
-    // Delete from mod queue + post to verified log channel
-    try {
-      const modQueueCh = guild.channels.cache.get(modQueueChannelId);
-      if (modQueueCh) {
-        const msgToDelete = await modQueueCh.messages.fetch(modQueueMessageId).catch(() => null);
-        if (msgToDelete) await msgToDelete.delete();
-      }
-    } catch (err) {
-      logger.warn('Could not delete mod queue message: ' + err.message);
-    }
-    const verifiedLogChannel = guild.channels.cache.get(config.channels.verifiedLogChannelId);
-    if (verifiedLogChannel) {
-      await verifiedLogChannel.send({
-        embeds: [embeds.buildVerifiedLogEmbed(member, interaction.user, roleName)],
-      }).catch(() => {});
-    }
-    const logChannel = guild.channels.cache.get(config.channels.logChannelId);
-    if (logChannel) {
-      await logChannel.send({ content: `✅ Verified: ${member.user.tag} → @${roleName} | By: ${interaction.user.tag}` }).catch(() => {});
-    }
+      (async () => {
+        const logChannel = guild.channels.cache.get(config.channels.logChannelId);
+        if (logChannel) {
+          await logChannel.send({
+            content: `✅ Verified: ${member.user.tag} → @${roleName} | By: ${interaction.user.tag}`,
+          }).catch(() => {});
+        }
+      })(),
+    ]);
 
-    // Persist verification to DB
+    // Fire-and-forget DB ops — don't block the interaction response
     const roleAssigned = pref === 'NSFW_ONLY' ? 'NSFW_ONLY' : pref === 'NSFW' ? 'INITIATE' : 'TRAVELER';
     memberRepo.saveMemberOnVerify(userId, guildId, {
       contentPreference: pref,
@@ -546,39 +534,41 @@ async function mod_rejectReason(interaction, parts) {
   const guild = interaction.client.guilds.cache.get(guildId);
   if (!guild) return interaction.reply({ content: 'Guild not found.', flags: MessageFlags.Ephemeral });
 
-  const modQueueChannelId = interaction.message.channelId;
-  const modQueueMessageId = interaction.message.id;
-
   await interaction.deferUpdate();
 
   try {
     const member = await guild.members.fetch(userId);
 
-    await member.user.send({ embeds: [embeds.buildRejectedEmbed(reason)] }).catch(() => {});
-
+    // Remove pending role from cache — no sequential dependency on DM/delete
     const pendingRole = guild.roles.cache.get(config.roles.verificationPendingRoleId);
     if (pendingRole) await member.roles.remove(pendingRole).catch(() => {});
 
-    // Delete from mod queue + post to rejected log channel
-    try {
-      const modQueueCh = guild.channels.cache.get(modQueueChannelId);
-      if (modQueueCh) {
-        const msgToDelete = await modQueueCh.messages.fetch(modQueueMessageId).catch(() => null);
-        if (msgToDelete) await msgToDelete.delete();
-      }
-    } catch (err) {
-      logger.warn('Could not delete mod queue message: ' + err.message);
-    }
-    const rejectedLogChannel  = guild.channels.cache.get(config.channels.rejectedLogChannelId);
-    if (rejectedLogChannel) {
-      await rejectedLogChannel.send({
-        embeds: [embeds.buildRejectedLogEmbed(member, interaction.user, reason)],
-      }).catch(() => {});
-    }
-    const logChannel = guild.channels.cache.get(config.channels.logChannelId);
-    if (logChannel) {
-      await logChannel.send({ content: `❌ Rejected: ${member.user.tag} | By: ${interaction.user.tag} | Reason: ${reason}` }).catch(() => {});
-    }
+    // All remaining ops are independent — run in parallel
+    await Promise.all([
+      member.user.send({ embeds: [embeds.buildRejectedEmbed(reason)] }).catch(() => {}),
+
+      interaction.message.delete().catch(err =>
+        logger.warn('Could not delete mod queue message: ' + err.message)
+      ),
+
+      (async () => {
+        const rejectedLogChannel = guild.channels.cache.get(config.channels.rejectedLogChannelId);
+        if (rejectedLogChannel) {
+          await rejectedLogChannel.send({
+            embeds: [embeds.buildRejectedLogEmbed(member, interaction.user, reason)],
+          }).catch(() => {});
+        }
+      })(),
+
+      (async () => {
+        const logChannel = guild.channels.cache.get(config.channels.logChannelId);
+        if (logChannel) {
+          await logChannel.send({
+            content: `❌ Rejected: ${member.user.tag} | By: ${interaction.user.tag} | Reason: ${reason}`,
+          }).catch(() => {});
+        }
+      })(),
+    ]);
 
     memberRepo.updateMemberStatus(userId, guildId, 'REJECTED').catch(() => {});
 
@@ -592,7 +582,7 @@ async function mod_rejectReason(interaction, parts) {
 
   } catch (err) {
     logger.error('Failed to reject member ' + userId + ':', { error: err.message });
-    await interaction.editReply({ content: 'Rejection failed: ' + err.message });
+    await interaction.followUp({ content: 'Rejection failed: ' + err.message, flags: MessageFlags.Ephemeral }).catch(() => {});
   }
 }
 
