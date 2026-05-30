@@ -673,15 +673,18 @@ async function mod_approve(interaction, guildId, userId, config) {
 
       (async () => {
         if (state?.intro && config.channels.introChannelId) {
-          const introChannel = guild.channels.cache.get(config.channels.introChannelId);
+          const introChannel = guild.channels.cache.get(config.channels.introChannelId)
+            ?? await guild.channels.fetch(config.channels.introChannelId).catch(() => null);
           if (introChannel) {
             await introChannel.send({
               embeds:     [embeds.buildPublicIntroEmbed(member, state, config)],
               components: [components.buildIntroChannelButtons(userId)],
-            }).catch(() => {});
+            }).catch(err => logger.warn('Failed to post intro channel message for ' + member.user.tag + ': ' + err.message));
+          } else {
+            logger.warn('Intro channel not found: ' + config.channels.introChannelId);
           }
         }
-      })(),
+      })().catch(err => logger.error('Intro channel IIFE crashed for ' + userId + ': ' + err.message)),
 
       // interaction.message IS the mod queue message — no need to re-fetch
       interaction.message.delete().catch(err =>
@@ -693,18 +696,18 @@ async function mod_approve(interaction, guildId, userId, config) {
         if (verifiedLogChannel) {
           await verifiedLogChannel.send({
             embeds: [embeds.buildVerifiedLogEmbed(member, interaction.user, roleName)],
-          }).catch(() => {});
+          }).catch(err => logger.warn('Failed to post verified log: ' + err.message));
         }
-      })(),
+      })().catch(err => logger.error('Verified log IIFE crashed: ' + err.message)),
 
       (async () => {
         const logChannel = guild.channels.cache.get(config.channels.logChannelId);
         if (logChannel) {
           await logChannel.send({
             content: `✅ Verified: ${member.user.tag} → @${roleName} | By: ${interaction.user.tag}`,
-          }).catch(() => {});
+          }).catch(err => logger.warn('Failed to post log channel message: ' + err.message));
         }
-      })(),
+      })().catch(err => logger.error('Log channel IIFE crashed: ' + err.message)),
     ]);
 
     // Fire-and-forget DB ops — don't block the interaction response
