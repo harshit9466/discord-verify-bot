@@ -10,7 +10,8 @@ const FIELD_MAP = {
   intro:               { col: 'intro',                 jsonb: true  },
   previousIntro:       { col: 'previous_intro',        jsonb: true  },
   modMessageId:        { col: 'mod_message_id',        jsonb: false },
-  editCategoryQueue:   { col: 'edit_category_queue',   jsonb: true  },
+  editCategoryQueue:       { col: 'edit_category_queue',       jsonb: true  },
+  previousSelectedRoles:  { col: 'previous_selected_roles',   jsonb: true  },
 };
 
 function rowToState(row) {
@@ -24,7 +25,8 @@ function rowToState(row) {
     intro:             row.intro,
     previousIntro:     row.previous_intro,
     modMessageId:      row.mod_message_id,
-    editCategoryQueue: row.edit_category_queue ?? null,
+    editCategoryQueue:      row.edit_category_queue      ?? null,
+    previousSelectedRoles:  row.previous_selected_roles  ?? null,
     startedAt:         new Date(row.started_at).getTime(),
     lastActivityAt:    new Date(row.last_activity_at).getTime(),
   };
@@ -60,8 +62,9 @@ async function initState(guildId, userId) {
       content_preference = NULL,
       intro              = NULL,
       previous_intro     = NULL,
-      mod_message_id     = NULL,
-      edit_category_queue = NULL,
+      mod_message_id          = NULL,
+      edit_category_queue     = NULL,
+      previous_selected_roles = NULL,
       started_at         = NOW(),
       last_activity_at   = NOW()
     RETURNING *

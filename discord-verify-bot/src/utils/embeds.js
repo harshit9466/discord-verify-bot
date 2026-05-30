@@ -238,9 +238,26 @@ function buildModQueueEmbed(member, state, config) {
         return `**${f.label}:** ~~${oldVal}~~ → **${newVal}**`;
       });
 
+    // Role diff — compare previousSelectedRoles vs current selectedRoles
+    if (state.previousSelectedRoles) {
+      const prevIds = new Set(Object.values(state.previousSelectedRoles).flat());
+      const newIds  = new Set(Object.values(state.selectedRoles ?? {}).flat());
+      const added   = [...newIds].filter(id => !prevIds.has(id));
+      const removed = [...prevIds].filter(id => !newIds.has(id));
+
+      if (added.length > 0 || removed.length > 0) {
+        const allRoles = config?.roleCategories?.flatMap(c => c.roles) ?? [];
+        const nameOf   = id => allRoles.find(r => r.id === id)?.label ?? `<@&${id}>`;
+        const parts    = [];
+        if (removed.length > 0) parts.push(`~~${removed.map(nameOf).join(', ')}~~`);
+        if (added.length > 0)   parts.push(`**${added.map(nameOf).join(', ')}**`);
+        changes.push(`**Roles:** ${parts.join(' → ')}`);
+      }
+    }
+
     embed.addFields({
       name:  '✏️ Changes from Previous Submission',
-      value: changes.length > 0 ? changes.join('\n') : '_No text changes detected_',
+      value: changes.length > 0 ? changes.join('\n') : '_No changes detected_',
     });
   }
 

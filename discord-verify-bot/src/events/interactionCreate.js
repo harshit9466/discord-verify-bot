@@ -161,14 +161,16 @@ async function step_restart(interaction, parts) {
     }
   }
 
-  const previousIntro = state?.intro ?? null;
+  const previousIntro         = state?.intro          ?? null;
+  const previousSelectedRoles = state?.selectedRoles  ?? null;
 
   // Don't wipe state — preserve intro/roles/contentPref so user only edits what they want
   await updateState(guildId, userId, {
     step:              STEPS.EDIT_MENU,
     editCategoryQueue: null,
     modMessageId:      null,
-    ...(previousIntro ? { previousIntro } : {}),
+    ...(previousIntro         ? { previousIntro }         : {}),
+    ...(previousSelectedRoles ? { previousSelectedRoles } : {}),
   });
 
   await interaction.update({
