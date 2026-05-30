@@ -167,6 +167,7 @@ async function step_restart(interaction, parts) {
   await updateState(guildId, userId, {
     step:              STEPS.EDIT_MENU,
     editCategoryQueue: null,
+    modMessageId:      null,
     ...(previousIntro ? { previousIntro } : {}),
   });
 
