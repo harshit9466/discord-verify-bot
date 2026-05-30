@@ -559,6 +559,28 @@ function buildEditMenuButtons(guildId, userId, config) {
 }
 
 /**
+ * Role category picker — multi-select so user picks only the categories they want to edit
+ * customId: verif:editrolespick:{guildId}:{userId}
+ */
+function buildRoleCategoryPickerMenu(config, guildId, userId) {
+  const options = config.roleCategories.map((cat, index) =>
+    new StringSelectMenuOptionBuilder()
+      .setValue(String(index))
+      .setLabel(cat.name)
+      .setEmoji(cat.emoji || '🏷️'),
+  );
+
+  const menu = new StringSelectMenuBuilder()
+    .setCustomId(`verif:editrolespick:${guildId}:${userId}`)
+    .setPlaceholder('Select categories to edit...')
+    .addOptions(options)
+    .setMinValues(1)
+    .setMaxValues(options.length);
+
+  return [new ActionRowBuilder().addComponents(menu)];
+}
+
+/**
  * "← Back to Edit Menu" button — content pref selection ke baad wapas jaane ke liye
  */
 function buildEditBackButton(guildId, userId) {
@@ -661,6 +683,7 @@ module.exports = {
   buildVerifSettingsComponents,
   buildVerifSettingsModal,
   buildEditMenuButtons,
+  buildRoleCategoryPickerMenu,
   buildEditBackButton,
   buildEditRoleButtons,
   buildEditConfigModal,

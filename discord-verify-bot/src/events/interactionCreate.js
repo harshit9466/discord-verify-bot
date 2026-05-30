@@ -64,8 +64,9 @@ async function handleButton(interaction, parts) {
 }
 
 async function handleSelectMenu(interaction, parts) {
-  if      (parts[1] === 'select') await step_roleSelect(interaction, parts);
-  else if (parts[1] === 'panel')  await panel_action(interaction, parts);
+  if      (parts[1] === 'select')       await step_roleSelect(interaction, parts);
+  else if (parts[1] === 'editrolespick') await step_editRolesPick(interaction, parts);
+  else if (parts[1] === 'panel')        await panel_action(interaction, parts);
 }
 
 async function handleModalSubmit(interaction, parts) {
@@ -164,7 +165,8 @@ async function step_restart(interaction, parts) {
 
   // Don't wipe state — preserve intro/roles/contentPref so user only edits what they want
   await updateState(guildId, userId, {
-    step: STEPS.EDIT_MENU,
+    step:              STEPS.EDIT_MENU,
+    editCategoryQueue: null,
     ...(previousIntro ? { previousIntro } : {}),
   });
 
@@ -211,12 +213,15 @@ async function step_edit(interaction, parts) {
     });
 
   } else if (sub === 'roles') {
-    const currentSelections = state.selectedRoles?.[0] ?? [];
     await interaction.update({
-      embeds: [embeds.buildRoleSelectionEmbed(config, 0)],
+      embeds: [{
+        color:       0x5865F2,
+        title:       '🏷️ Select Role Categories to Edit',
+        description: 'Choose which categories you\'d like to update. You can select multiple at once.',
+      }],
       components: [
-        components.buildRoleSelectMenu(config, 0, guildId, userId, currentSelections),
-        components.buildEditRoleButtons(guildId, userId, 0),
+        ...components.buildRoleCategoryPickerMenu(config, guildId, userId),
+        components.buildEditBackButton(guildId, userId),
       ],
     });
 
@@ -231,6 +236,39 @@ async function step_edit(interaction, parts) {
     await interaction.update({ embeds: [embeds.buildPendingEmbed()], components: [] });
     await postToModQueue(interaction, guildId, userId, await getState(guildId, userId));
   }
+}
+
+// ============================================================
+// EDIT ROLES PICK: User ne category picker se categories select kiye
+// ============================================================
+async function step_editRolesPick(interaction, parts) {
+  const guildId = parts[2];
+  const userId  = parts[3];
+
+  if (interaction.user.id !== userId) {
+    return interaction.reply({ content: 'This is not your verification.', flags: MessageFlags.Ephemeral });
+  }
+
+  const config = getGuildConfig(guildId);
+  const state  = await getState(guildId, userId);
+  if (!state) {
+    return interaction.reply({ content: 'Session expired. Please click the verification button again.', flags: MessageFlags.Ephemeral });
+  }
+
+  // Sort selected indices to walk them in order (0 → 1 → 2 ...)
+  const queue = interaction.values.map(Number).sort((a, b) => a - b);
+  await updateState(guildId, userId, { editCategoryQueue: queue });
+
+  const firstIndex = queue[0];
+  const currentSelections = state.selectedRoles?.[firstIndex] ?? [];
+
+  return interaction.update({
+    embeds:     [embeds.buildRoleSelectionEmbed(config, firstIndex)],
+    components: [
+      components.buildRoleSelectMenu(config, firstIndex, guildId, userId, currentSelections),
+      components.buildEditRoleButtons(guildId, userId, firstIndex),
+    ],
+  });
 }
 
 // ============================================================
@@ -254,16 +292,18 @@ async function step_keepCategory(interaction, parts) {
     return interaction.reply({ content: 'Session expired. Please click the verification button again.', flags: MessageFlags.Ephemeral });
   }
 
-  const isLastCategory = categoryIndex >= config.roleCategories.length - 1;
+  const queue = (state.editCategoryQueue ?? []).filter(i => i !== categoryIndex);
 
-  if (isLastCategory) {
+  if (queue.length === 0) {
+    await updateState(guildId, userId, { editCategoryQueue: null });
     return interaction.update({
       embeds:     [embeds.buildEditMenuEmbed(state, config)],
       components: components.buildEditMenuButtons(guildId, userId, config),
     });
   }
 
-  const nextIndex = categoryIndex + 1;
+  await updateState(guildId, userId, { editCategoryQueue: queue });
+  const nextIndex = queue[0];
   const nextSelections = state.selectedRoles?.[nextIndex] ?? [];
   return interaction.update({
     embeds:     [embeds.buildRoleSelectionEmbed(config, nextIndex)],
@@ -332,24 +372,39 @@ async function step_roleSelect(interaction, parts) {
   const updatedSelections = { ...state.selectedRoles, [categoryIndex]: interaction.values };
   await updateState(guildId, userId, { selectedRoles: updatedSelections });
 
+  // Edit mode: navigate via queue, not sequential category order
+  if (state.step === STEPS.EDIT_MENU) {
+    const queue = (state.editCategoryQueue ?? []).filter(i => i !== categoryIndex);
+
+    if (queue.length === 0) {
+      await updateState(guildId, userId, { editCategoryQueue: null });
+      const updatedState = await getState(guildId, userId);
+      return interaction.update({
+        embeds:     [embeds.buildEditMenuEmbed(updatedState, config)],
+        components: components.buildEditMenuButtons(guildId, userId, config),
+      });
+    }
+
+    await updateState(guildId, userId, { editCategoryQueue: queue });
+    const nextIndex = queue[0];
+    const updatedState = await getState(guildId, userId);
+    const nextSelections = updatedState.selectedRoles?.[nextIndex] ?? [];
+    return interaction.update({
+      embeds:     [embeds.buildRoleSelectionEmbed(config, nextIndex)],
+      components: [
+        components.buildRoleSelectMenu(config, nextIndex, guildId, userId, nextSelections),
+        components.buildEditRoleButtons(guildId, userId, nextIndex),
+      ],
+    });
+  }
+
   const isLastCategory = categoryIndex >= config.roleCategories.length - 1;
 
   if (!isLastCategory) {
     const nextIndex = categoryIndex + 1;
-    const nextSelections = state.selectedRoles?.[nextIndex] ?? [];
-    const comps = [components.buildRoleSelectMenu(config, nextIndex, guildId, userId, nextSelections)];
-    if (state.step === STEPS.EDIT_MENU) comps.push(components.buildEditRoleButtons(guildId, userId, nextIndex));
     return interaction.update({
       embeds:     [embeds.buildRoleSelectionEmbed(config, nextIndex)],
-      components: comps,
-    });
-  }
-
-  if (state.step === STEPS.EDIT_MENU) {
-    const updatedState = await getState(guildId, userId);
-    return interaction.update({
-      embeds:     [embeds.buildEditMenuEmbed(updatedState, config)],
-      components: components.buildEditMenuButtons(guildId, userId, config),
+      components: [components.buildRoleSelectMenu(config, nextIndex, guildId, userId)],
     });
   }
 

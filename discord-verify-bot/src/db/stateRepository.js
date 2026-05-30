@@ -3,13 +3,14 @@ const { pool } = require('./connection');
 const TIMEOUT_MINUTES = 60;
 
 const FIELD_MAP = {
-  step:              { col: 'step',               jsonb: false },
-  rulesAgreed:       { col: 'rules_agreed',        jsonb: false },
-  selectedRoles:     { col: 'selected_roles',      jsonb: true  },
-  contentPreference: { col: 'content_preference',  jsonb: false },
-  intro:             { col: 'intro',               jsonb: true  },
-  previousIntro:     { col: 'previous_intro',      jsonb: true  },
-  modMessageId:      { col: 'mod_message_id',      jsonb: false },
+  step:                { col: 'step',                 jsonb: false },
+  rulesAgreed:         { col: 'rules_agreed',          jsonb: false },
+  selectedRoles:       { col: 'selected_roles',        jsonb: true  },
+  contentPreference:   { col: 'content_preference',    jsonb: false },
+  intro:               { col: 'intro',                 jsonb: true  },
+  previousIntro:       { col: 'previous_intro',        jsonb: true  },
+  modMessageId:        { col: 'mod_message_id',        jsonb: false },
+  editCategoryQueue:   { col: 'edit_category_queue',   jsonb: true  },
 };
 
 function rowToState(row) {
@@ -23,6 +24,7 @@ function rowToState(row) {
     intro:             row.intro,
     previousIntro:     row.previous_intro,
     modMessageId:      row.mod_message_id,
+    editCategoryQueue: row.edit_category_queue ?? null,
     startedAt:         new Date(row.started_at).getTime(),
     lastActivityAt:    new Date(row.last_activity_at).getTime(),
   };
@@ -59,6 +61,7 @@ async function initState(guildId, userId) {
       intro              = NULL,
       previous_intro     = NULL,
       mod_message_id     = NULL,
+      edit_category_queue = NULL,
       started_at         = NOW(),
       last_activity_at   = NOW()
     RETURNING *
