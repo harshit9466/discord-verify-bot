@@ -79,7 +79,7 @@ const settingsRepo = require('./db/settingsRepository');
 const embeds       = require('./utils/embeds');
 const components   = require('./utils/components');
 
-client.once('ready', async () => {
+client.once('clientReady', async () => {
   // Load persisted settings from DB into in-memory config cache
   // so the scheduled job always has up-to-date settings after a redeploy
   for (const guildId of getAllConfiguredGuilds()) {
