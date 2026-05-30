@@ -40,7 +40,7 @@ module.exports = {
     }
 
     // DM mode: State initialize karo aur verification DM bhejo
-    initState(guild.id, user.id);
+    await initState(guild.id, user.id);
     await sendVerificationMessage(newMember, config, guild);
   },
 };

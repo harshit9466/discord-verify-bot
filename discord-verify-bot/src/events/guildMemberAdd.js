@@ -52,7 +52,7 @@ module.exports = {
     if (isAutoVerified) return;
 
     // ---- Normal verification flow ----
-    initState(guild.id, user.id);
+    await initState(guild.id, user.id);
 
     if (config.settings.verificationMode === 'channel') {
       await logToChannel(guild, config, `📥 **Member Joined:** ${user.tag} (<@${user.id}>) • Account age: <t:${Math.floor(user.createdTimestamp / 1000)}:R>`);

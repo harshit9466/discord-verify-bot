@@ -90,7 +90,7 @@ async function step_begin(interaction, parts) {
     return interaction.reply({ content: 'Server config not found. Please contact a moderator.', flags: MessageFlags.Ephemeral });
   }
 
-  const state = getState(guildId, userId);
+  const state = await getState(guildId, userId);
 
   if (state?.step === STEPS.PENDING) {
     return interaction.reply({
@@ -116,8 +116,8 @@ async function step_begin(interaction, parts) {
     }
   }
 
-  initState(guildId, userId);
-  updateState(guildId, userId, { step: STEPS.RULES });
+  await initState(guildId, userId);
+  await updateState(guildId, userId, { step: STEPS.RULES });
 
   const payload = {
     embeds:     [embeds.buildRulesEmbed(config)],
@@ -143,7 +143,7 @@ async function step_restart(interaction, parts) {
   }
 
   const config = getGuildConfig(guildId);
-  const state  = getState(guildId, userId);
+  const state  = await getState(guildId, userId);
 
   if (state?.modMessageId && config?.channels?.modQueueChannelId) {
     try {
@@ -160,9 +160,10 @@ async function step_restart(interaction, parts) {
 
   const previousIntro = state?.intro ?? null;
 
-  initState(guildId, userId);
-  updateState(guildId, userId, { step: STEPS.RULES });
-  if (previousIntro) updateState(guildId, userId, { previousIntro });
+  await initState(guildId, userId);
+  const restartUpdates = { step: STEPS.RULES };
+  if (previousIntro) restartUpdates.previousIntro = previousIntro;
+  await updateState(guildId, userId, restartUpdates);
 
   await interaction.update({
     embeds:     [embeds.buildRulesEmbed(config)],
@@ -182,8 +183,8 @@ async function step_rules(interaction, parts) {
     return interaction.reply({ content: 'This is not your verification.', flags: MessageFlags.Ephemeral });
   }
 
-  let state = getState(guildId, userId);
-  if (!state) state = initState(guildId, userId);
+  let state = await getState(guildId, userId);
+  if (!state) state = await initState(guildId, userId);
 
   const config = getGuildConfig(guildId);
 
@@ -197,7 +198,7 @@ async function step_rules(interaction, parts) {
     });
   }
 
-  updateState(guildId, userId, { step: STEPS.ROLES, rulesAgreed: true });
+  await updateState(guildId, userId, { step: STEPS.ROLES, rulesAgreed: true });
 
   if (config.settings.requireRoleSelection && config.roleCategories?.length > 0) {
     return interaction.update({
@@ -221,12 +222,12 @@ async function step_roleSelect(interaction, parts) {
     return interaction.reply({ content: 'This is not your verification.', flags: MessageFlags.Ephemeral });
   }
 
-  let state = getState(guildId, userId);
-  if (!state) state = initState(guildId, userId);
+  let state = await getState(guildId, userId);
+  if (!state) state = await initState(guildId, userId);
 
   const config           = getGuildConfig(guildId);
   const updatedSelections = { ...state.selectedRoles, [categoryIndex]: interaction.values };
-  updateState(guildId, userId, { selectedRoles: updatedSelections });
+  await updateState(guildId, userId, { selectedRoles: updatedSelections });
 
   const isLastCategory = categoryIndex >= config.roleCategories.length - 1;
 
@@ -253,10 +254,10 @@ async function step_content(interaction, parts) {
     return interaction.reply({ content: 'This is not your verification.', flags: MessageFlags.Ephemeral });
   }
 
-  let state = getState(guildId, userId);
-  if (!state) state = initState(guildId, userId);
+  let state = await getState(guildId, userId);
+  if (!state) state = await initState(guildId, userId);
 
-  updateState(guildId, userId, { step: STEPS.INTRO, contentPreference: pref });
+  await updateState(guildId, userId, { step: STEPS.INTRO, contentPreference: pref });
 
   await interaction.update({
     embeds:     [embeds.buildIntroPromptEmbed()],
@@ -275,8 +276,8 @@ async function step_openIntroModal(interaction, parts) {
     return interaction.reply({ content: 'This is not your verification.', flags: MessageFlags.Ephemeral });
   }
 
-  let state = getState(guildId, userId);
-  if (!state) state = initState(guildId, userId);
+  let state = await getState(guildId, userId);
+  if (!state) state = await initState(guildId, userId);
 
   await interaction.showModal(components.buildIntroModal(guildId, userId));
 }
@@ -292,7 +293,7 @@ async function step_introSubmit(interaction, parts) {
     return interaction.reply({ content: 'This is not your verification.', flags: MessageFlags.Ephemeral });
   }
 
-  const state = getState(guildId, userId);
+  const state = await getState(guildId, userId);
   if (!state) {
     return interaction.reply({ content: 'Session expired. Please click the verification button again.', flags: MessageFlags.Ephemeral });
   }
@@ -312,7 +313,7 @@ async function step_introSubmit(interaction, parts) {
     return interaction.reply({ content: 'Please enter a valid age between 13 and 100.', flags: MessageFlags.Ephemeral });
   }
 
-  updateState(guildId, userId, { intro });
+  await updateState(guildId, userId, { intro });
 
   await interaction.reply({
     embeds:     [embeds.buildKinksStepEmbed()],
@@ -336,15 +337,15 @@ async function step_kinks(interaction, parts) {
   if (sub === 'open') {
     await interaction.showModal(components.buildKinksModal(guildId, userId));
   } else if (sub === 'skip') {
-    const state = getState(guildId, userId);
+    const state = await getState(guildId, userId);
     if (!state) {
       return interaction.reply({ content: 'Session expired. Please restart verification.', flags: MessageFlags.Ephemeral });
     }
 
-    updateState(guildId, userId, { step: STEPS.PENDING });
+    await updateState(guildId, userId, { step: STEPS.PENDING });
 
     await interaction.update({ embeds: [embeds.buildPendingEmbed()], components: [] });
-    await postToModQueue(interaction, guildId, userId, getState(guildId, userId));
+    await postToModQueue(interaction, guildId, userId, await getState(guildId, userId));
   }
 }
 
@@ -359,7 +360,7 @@ async function step_kinksSubmit(interaction, parts) {
     return interaction.reply({ content: 'This is not your verification.', flags: MessageFlags.Ephemeral });
   }
 
-  const state = getState(guildId, userId);
+  const state = await getState(guildId, userId);
   if (!state) {
     return interaction.reply({ content: 'Session expired. Please restart verification.', flags: MessageFlags.Ephemeral });
   }
@@ -368,7 +369,7 @@ async function step_kinksSubmit(interaction, parts) {
   const hardLimits = interaction.fields.getTextInputValue('hardLimits')?.trim() || null;
   const updatedIntro = { ...state.intro, kinks, hardLimits };
 
-  updateState(guildId, userId, { step: STEPS.PENDING, intro: updatedIntro });
+  await updateState(guildId, userId, { step: STEPS.PENDING, intro: updatedIntro });
 
   await interaction.reply({
     embeds:     [embeds.buildPendingEmbed()],
@@ -376,7 +377,7 @@ async function step_kinksSubmit(interaction, parts) {
     flags:      interaction.inGuild() ? MessageFlags.Ephemeral : undefined,
   });
 
-  await postToModQueue(interaction, guildId, userId, getState(guildId, userId));
+  await postToModQueue(interaction, guildId, userId, await getState(guildId, userId));
 }
 
 // ============================================================
@@ -423,7 +424,7 @@ async function mod_approve(interaction, guildId, userId, config) {
 
   try {
     const member = await guild.members.fetch(userId);
-    const state  = getState(guildId, userId);
+    const state  = await getState(guildId, userId);
     const pref   = state?.contentPreference ?? 'SFW';
 
     let roleId, roleName;
@@ -525,7 +526,7 @@ async function mod_approve(interaction, guildId, userId, config) {
       notes:       `Approved by ${interaction.user.tag}`,
     }).catch(() => {});
 
-    clearState(guildId, userId);
+    await clearState(guildId, userId);
     logger.info(member.user.tag + ' approved by ' + interaction.user.tag + ' in ' + guild.name);
 
   } catch (err) {
@@ -586,7 +587,7 @@ async function mod_rejectReason(interaction, parts) {
       notes:       `Reason: ${reason}`,
     }).catch(() => {});
 
-    clearState(guildId, userId);
+    await clearState(guildId, userId);
     logger.info(member.user.tag + ' rejected by ' + interaction.user.tag);
 
   } catch (err) {
@@ -600,7 +601,7 @@ async function mod_rejectReason(interaction, parts) {
 // ============================================================
 
 async function showContentPreference(interaction, guildId, userId, config) {
-  updateState(guildId, userId, { step: STEPS.CONTENT });
+  await updateState(guildId, userId, { step: STEPS.CONTENT });
   await interaction.update({
     embeds:     [embeds.buildContentPrefEmbed(config)],
     components: [components.buildContentPrefButtons(guildId, userId, config.settings.nsfwEnabled)],
@@ -639,7 +640,7 @@ async function postToModQueue(interaction, guildId, userId, state) {
       components: [components.buildModQueueButtons(guildId, userId)],
     });
 
-    updateState(guildId, userId, { modMessageId: modMsg.id });
+    await updateState(guildId, userId, { modMessageId: modMsg.id });
 
     memberRepo.updateMemberStatus(userId, guildId, 'AWAITING_MOD').catch(() => {});
 
@@ -991,9 +992,9 @@ async function cmd_verifyMe(interaction) {
     return interaction.reply({ content: 'Server config not found.', flags: MessageFlags.Ephemeral });
   }
 
-  clearState(guildId, userId);
-  initState(guildId, userId);
-  updateState(guildId, userId, { step: STEPS.RULES });
+  await clearState(guildId, userId);
+  await initState(guildId, userId);
+  await updateState(guildId, userId, { step: STEPS.RULES });
 
   await interaction.reply({
     content:    'Verification restarted! Let\'s go from the top:',

@@ -21,10 +21,10 @@ module.exports = {
     logger.info(`Member left: ${user.tag} (${user.id}) ← Guild: ${guild.name} (${guild.id})`);
 
     // In-progress verification state clean up
-    const existingState = getState(guild.id, user.id);
+    const existingState = await getState(guild.id, user.id);
     if (existingState) {
       logger.info(`Clearing incomplete verification state for ${user.tag} (they left mid-flow)`);
-      clearState(guild.id, user.id);
+      await clearState(guild.id, user.id);
     }
 
     const config = getGuildConfig(guild.id);

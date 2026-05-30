@@ -67,10 +67,27 @@ async function initDb() {
       );
     `);
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS verification_states (
+        guild_id           VARCHAR(20)  NOT NULL,
+        user_id            VARCHAR(20)  NOT NULL,
+        step               VARCHAR(20)  NOT NULL DEFAULT 'NOT_STARTED',
+        rules_agreed       BOOLEAN      NOT NULL DEFAULT false,
+        selected_roles     JSONB        NOT NULL DEFAULT '{}',
+        content_preference VARCHAR(20),
+        intro              JSONB,
+        previous_intro     JSONB,
+        mod_message_id     VARCHAR(20),
+        started_at         TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+        last_activity_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (guild_id, user_id)
+      );
+    `);
+
     // Additive column migrations — safe to run every time
     await client.query(`
-      ALTER TABLE members      ADD COLUMN IF NOT EXISTS reminder_sent_at  TIMESTAMPTZ;
-      ALTER TABLE guild_settings ADD COLUMN IF NOT EXISTS config_overrides JSONB NOT NULL DEFAULT '{}';
+      ALTER TABLE members        ADD COLUMN IF NOT EXISTS reminder_sent_at  TIMESTAMPTZ;
+      ALTER TABLE guild_settings ADD COLUMN IF NOT EXISTS config_overrides  JSONB NOT NULL DEFAULT '{}';
     `);
     logger.info('Database tables initialized successfully');
   } finally {
