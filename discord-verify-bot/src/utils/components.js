@@ -559,6 +559,18 @@ function buildEditMenuButtons(guildId, userId, config) {
 }
 
 /**
+ * "← Back to Edit Menu" button — role/content selection ke baad wapas jaane ke liye
+ */
+function buildEditBackButton(guildId, userId) {
+  return new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`verif:edit:back:${guildId}:${userId}`)
+      .setLabel('← Back to Edit Menu')
+      .setStyle(ButtonStyle.Secondary),
+  );
+}
+
+/**
  * Edit config modal — welcome title/desc + rules title/text
  * Pre-filled with current values from in-memory config
  */
@@ -630,5 +642,6 @@ module.exports = {
   buildVerifSettingsComponents,
   buildVerifSettingsModal,
   buildEditMenuButtons,
+  buildEditBackButton,
   buildEditConfigModal,
 };

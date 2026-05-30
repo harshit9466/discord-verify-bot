@@ -202,14 +202,27 @@ async function step_edit(interaction, parts) {
 
   } else if (sub === 'content') {
     await interaction.update({
-      embeds:     [embeds.buildContentPrefEmbed(config)],
-      components: [components.buildContentPrefButtons(guildId, userId, config.settings.nsfwEnabled)],
+      embeds: [embeds.buildContentPrefEmbed(config)],
+      components: [
+        components.buildContentPrefButtons(guildId, userId, config.settings.nsfwEnabled),
+        components.buildEditBackButton(guildId, userId),
+      ],
     });
 
   } else if (sub === 'roles') {
+    const currentSelections = state.selectedRoles?.[0] ?? [];
     await interaction.update({
-      embeds:     [embeds.buildRoleSelectionEmbed(config, 0)],
-      components: [components.buildRoleSelectMenu(config, 0, guildId, userId)],
+      embeds: [embeds.buildRoleSelectionEmbed(config, 0)],
+      components: [
+        components.buildRoleSelectMenu(config, 0, guildId, userId, currentSelections),
+        components.buildEditBackButton(guildId, userId),
+      ],
+    });
+
+  } else if (sub === 'back') {
+    await interaction.update({
+      embeds:     [embeds.buildEditMenuEmbed(state, config)],
+      components: components.buildEditMenuButtons(guildId, userId, config),
     });
 
   } else if (sub === 'submit') {
@@ -281,9 +294,12 @@ async function step_roleSelect(interaction, parts) {
 
   if (!isLastCategory) {
     const nextIndex = categoryIndex + 1;
+    const nextSelections = state.selectedRoles?.[nextIndex] ?? [];
+    const comps = [components.buildRoleSelectMenu(config, nextIndex, guildId, userId, nextSelections)];
+    if (state.step === STEPS.EDIT_MENU) comps.push(components.buildEditBackButton(guildId, userId));
     return interaction.update({
       embeds:     [embeds.buildRoleSelectionEmbed(config, nextIndex)],
-      components: [components.buildRoleSelectMenu(config, nextIndex, guildId, userId)],
+      components: comps,
     });
   }
 
