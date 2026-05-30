@@ -486,7 +486,8 @@ async function mod_approve(interaction, guildId, userId, config) {
       const introChannel = guild.channels.cache.get(config.channels.introChannelId);
       if (introChannel) {
         await introChannel.send({
-          embeds: [embeds.buildPublicIntroEmbed(member, state, config)],
+          embeds:     [embeds.buildPublicIntroEmbed(member, state, config)],
+          components: [components.buildIntroChannelButtons(userId)],
         }).catch(() => {});
       }
     }

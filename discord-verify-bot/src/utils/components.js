@@ -499,6 +499,19 @@ function buildNotifyToggleButton(guildId, isCurrentlyOn) {
 }
 
 /**
+ * Intro channel buttons — posted below the public intro embed after approval
+ * Only a View Profile link — no interactive buttons needed here
+ */
+function buildIntroChannelButtons(userId) {
+  const viewProfile = new ButtonBuilder()
+    .setURL(`https://discord.com/users/${userId}`)
+    .setLabel('🔎 View Profile')
+    .setStyle(ButtonStyle.Link);
+
+  return new ActionRowBuilder().addComponents(viewProfile);
+}
+
+/**
  * Edit config modal — welcome title/desc + rules title/text
  * Pre-filled with current values from in-memory config
  */
@@ -560,6 +573,7 @@ module.exports = {
   buildOpenIntroButton,
   buildModQueueButtons,
   buildModQueueButtonsDisabled,
+  buildIntroChannelButtons,
   buildIntroModal,
   buildKinksModal,
   buildKinksStepButtons,
