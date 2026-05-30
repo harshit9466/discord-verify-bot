@@ -151,20 +151,18 @@ async function step_restart(interaction, parts) {
       const modQueueChannel = guild?.channels.cache.get(config.channels.modQueueChannelId);
       if (modQueueChannel) {
         const modMsg = await modQueueChannel.messages.fetch(state.modMessageId).catch(() => null);
-        if (modMsg) {
-          await modMsg.edit({
-            embeds: [modMsg.embeds[0], { color: 0xFEE75C, description: 'Withdrawn by user — resubmitting.' }],
-            components: [],
-          }).catch(() => {});
-        }
+        if (modMsg) await modMsg.delete().catch(() => {});
       }
     } catch (err) {
-      logger.warn('Could not update mod queue message for restart: ' + err.message);
+      logger.warn('Could not delete mod queue message for restart: ' + err.message);
     }
   }
 
+  const previousIntro = state?.intro ?? null;
+
   initState(guildId, userId);
   updateState(guildId, userId, { step: STEPS.RULES });
+  if (previousIntro) updateState(guildId, userId, { previousIntro });
 
   await interaction.update({
     embeds:     [embeds.buildRulesEmbed(config)],

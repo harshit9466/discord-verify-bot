@@ -217,6 +217,33 @@ function buildModQueueEmbed(member, state, config) {
 
   embed.addFields({ name: '🏷️ Selected Roles', value: roleLines || '_None_' });
 
+  if (state.previousIntro) {
+    const prev = state.previousIntro;
+    const DIFF_FIELDS = [
+      { key: 'displayName', label: 'Name' },
+      { key: 'age',         label: 'Age' },
+      { key: 'location',    label: 'Location' },
+      { key: 'howFound',    label: 'How Found' },
+      { key: 'aboutYou',   label: 'Introduction' },
+      { key: 'kinks',      label: 'Kinks' },
+      { key: 'hardLimits', label: 'Hard Limits' },
+    ];
+    const trunc = (val, n = 60) => val ? (val.length > n ? val.slice(0, n) + '…' : val) : null;
+
+    const changes = DIFF_FIELDS
+      .filter(f => (prev[f.key] ?? null) !== (intro[f.key] ?? null))
+      .map(f => {
+        const oldVal = trunc(prev[f.key]) ?? '_empty_';
+        const newVal = trunc(intro[f.key]) ?? '_empty_';
+        return `**${f.label}:** ~~${oldVal}~~ → **${newVal}**`;
+      });
+
+    embed.addFields({
+      name:  '✏️ Changes from Previous Submission',
+      value: changes.length > 0 ? changes.join('\n') : '_No text changes detected_',
+    });
+  }
+
   embed
     .setFooter({ text: 'Use buttons below to approve or reject' })
     .setTimestamp();
