@@ -69,7 +69,8 @@ async function initDb() {
 
     // Additive column migrations — safe to run every time
     await client.query(`
-      ALTER TABLE members ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMPTZ;
+      ALTER TABLE members      ADD COLUMN IF NOT EXISTS reminder_sent_at  TIMESTAMPTZ;
+      ALTER TABLE guild_settings ADD COLUMN IF NOT EXISTS config_overrides JSONB NOT NULL DEFAULT '{}';
     `);
     logger.info('Database tables initialized successfully');
   } finally {
