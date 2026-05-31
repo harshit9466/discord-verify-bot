@@ -2,7 +2,7 @@
 // INTERACTION CREATE — Central router for ALL interactions
 // ============================================================
 
-const { MessageFlags } = require('discord.js');
+const { MessageFlags, PermissionFlagsBits } = require('discord.js');
 const logger = require('../utils/logger');
 const { getGuildConfig, saveGuildConfig, applyConfigOverrides } = require('../config/configManager');
 const { getState, initState, updateState, clearState, STEPS } = require('../utils/stateManager');
@@ -595,8 +595,8 @@ async function mod_action(interaction, parts) {
   const guildId   = parts[3];
   const userId    = parts[4];
 
-  if (!interaction.member?.permissions.has('ManageRoles') &&
-      !interaction.member?.permissions.has('Administrator')) {
+  if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageRoles) &&
+      !interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
     return interaction.reply({
       content: 'You need Manage Roles permission to approve/reject verifications.',
       flags: MessageFlags.Ephemeral,
@@ -869,8 +869,8 @@ async function panel_action(interaction, parts) {
   const sub     = parts[2];
   const guildId = parts[3];
 
-  if (!interaction.member?.permissions.has('ManageRoles') &&
-      !interaction.member?.permissions.has('Administrator')) {
+  if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageRoles) &&
+      !interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
     return interaction.reply({ content: 'Mod panel is for moderators only.', flags: MessageFlags.Ephemeral });
   }
 
@@ -1003,8 +1003,8 @@ async function panel_editSettings(interaction, guildId) {
 async function modal_saveVerifSettings(interaction, parts) {
   const guildId = parts[3];
 
-  if (!interaction.member?.permissions.has('ManageRoles') &&
-      !interaction.member?.permissions.has('Administrator')) {
+  if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageRoles) &&
+      !interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
     return interaction.reply({ content: 'Mod panel is for moderators only.', flags: MessageFlags.Ephemeral });
   }
 
@@ -1059,7 +1059,7 @@ async function cmd_ping(interaction) {
 }
 
 async function cmd_setupVerify(interaction) {
-  if (!interaction.member?.permissions.has('Administrator')) {
+  if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
     return interaction.reply({ content: 'Administrator permission required.', flags: MessageFlags.Ephemeral });
   }
 
@@ -1091,7 +1091,7 @@ async function cmd_setupVerify(interaction) {
 }
 
 async function cmd_setupModPanel(interaction) {
-  if (!interaction.member?.permissions.has('Administrator')) {
+  if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
     return interaction.reply({ content: 'Administrator permission required.', flags: MessageFlags.Ephemeral });
   }
 
@@ -1125,7 +1125,7 @@ async function cmd_setupModPanel(interaction) {
 }
 
 async function cmd_editConfig(interaction) {
-  if (!interaction.member?.permissions.has('Administrator')) {
+  if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
     return interaction.reply({ content: 'Administrator permission required.', flags: MessageFlags.Ephemeral });
   }
   const config = getGuildConfig(interaction.guildId);
@@ -1138,7 +1138,7 @@ async function cmd_editConfig(interaction) {
 async function modal_saveConfig(interaction, parts) {
   const guildId = parts[3];
 
-  if (!interaction.member?.permissions.has('Administrator')) {
+  if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
     return interaction.reply({ content: 'Administrator permission required.', flags: MessageFlags.Ephemeral });
   }
 
@@ -1169,7 +1169,7 @@ async function modal_saveConfig(interaction, parts) {
 }
 
 async function cmd_reloadConfig(interaction) {
-  if (!interaction.member?.permissions.has('Administrator')) {
+  if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
     return interaction.reply({ content: 'Administrator permission required.', flags: MessageFlags.Ephemeral });
   }
 
