@@ -55,9 +55,12 @@ async function initDb() {
         UNIQUE(discord_user_id, guild_id)
       );
 
-      CREATE INDEX IF NOT EXISTS idx_members_lookup ON members(discord_user_id, guild_id);
-      CREATE INDEX IF NOT EXISTS idx_events_user    ON events(discord_user_id, guild_id);
-      CREATE INDEX IF NOT EXISTS idx_events_type    ON events(event_type);
+      CREATE INDEX IF NOT EXISTS idx_members_lookup      ON members(discord_user_id, guild_id);
+      CREATE INDEX IF NOT EXISTS idx_events_user         ON events(discord_user_id, guild_id);
+      CREATE INDEX IF NOT EXISTS idx_events_type         ON events(event_type);
+      CREATE INDEX IF NOT EXISTS idx_members_status      ON members(guild_id, verification_status);
+      CREATE INDEX IF NOT EXISTS idx_members_joined      ON members(guild_id, first_joined_at);
+      CREATE INDEX IF NOT EXISTS idx_events_guild_type   ON events(guild_id, event_type, event_at);
     `);
 
     await client.query(`

@@ -94,7 +94,7 @@ Fine at current scale (2 guilds, hundreds of members). Will degrade noticeably b
 **Fix:**  
 Add 3 `CREATE INDEX IF NOT EXISTS` lines to `initDb` in `connection.js`. Safe to add at any time — `IF NOT EXISTS` is idempotent.
 
-**Status:** [ ] Pending
+**Status:** [x] Fixed
 
 ---
 
