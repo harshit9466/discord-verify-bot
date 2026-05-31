@@ -120,7 +120,7 @@ await postToModQueue(..., await getState(guildId, userId));        // redundant 
 **Fix:**  
 Capture the return value of `updateState()` and use it directly. Remove the subsequent `getState()` call in each location.
 
-**Status:** [ ] Pending
+**Status:** [x] Fixed
 
 ---
 

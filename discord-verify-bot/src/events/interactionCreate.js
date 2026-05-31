@@ -235,9 +235,9 @@ async function step_edit(interaction, parts) {
     });
 
   } else if (sub === 'submit') {
-    await updateState(guildId, userId, { step: STEPS.PENDING });
+    const updatedState = await updateState(guildId, userId, { step: STEPS.PENDING });
     await interaction.update({ embeds: [embeds.buildPendingEmbed()], components: [] });
-    await postToModQueue(interaction, guildId, userId, await getState(guildId, userId));
+    await postToModQueue(interaction, guildId, userId, updatedState);
   }
 }
 
@@ -380,17 +380,15 @@ async function step_roleSelect(interaction, parts) {
     const queue = (state.editCategoryQueue ?? []).filter(i => i !== categoryIndex);
 
     if (queue.length === 0) {
-      await updateState(guildId, userId, { editCategoryQueue: null });
-      const updatedState = await getState(guildId, userId);
+      const updatedState = await updateState(guildId, userId, { editCategoryQueue: null });
       return interaction.update({
         embeds:     [embeds.buildEditMenuEmbed(updatedState, config)],
         components: components.buildEditMenuButtons(guildId, userId, config),
       });
     }
 
-    await updateState(guildId, userId, { editCategoryQueue: queue });
+    const updatedState = await updateState(guildId, userId, { editCategoryQueue: queue });
     const nextIndex = queue[0];
-    const updatedState = await getState(guildId, userId);
     const nextSelections = updatedState.selectedRoles?.[nextIndex] ?? [];
     return interaction.update({
       embeds:     [embeds.buildRoleSelectionEmbed(config, nextIndex)],
@@ -537,10 +535,10 @@ async function step_kinks(interaction, parts) {
       return interaction.reply({ content: 'Session expired. Please restart verification.', flags: MessageFlags.Ephemeral });
     }
 
-    await updateState(guildId, userId, { step: STEPS.PENDING });
+    const updatedState = await updateState(guildId, userId, { step: STEPS.PENDING });
 
     await interaction.update({ embeds: [embeds.buildPendingEmbed()], components: [] });
-    await postToModQueue(interaction, guildId, userId, await getState(guildId, userId));
+    await postToModQueue(interaction, guildId, userId, updatedState);
   }
 }
 
@@ -576,7 +574,7 @@ async function step_kinksSubmit(interaction, parts) {
     });
   }
 
-  await updateState(guildId, userId, { step: STEPS.PENDING, intro: updatedIntro });
+  const updatedState = await updateState(guildId, userId, { step: STEPS.PENDING, intro: updatedIntro });
 
   await interaction.reply({
     embeds:     [embeds.buildPendingEmbed()],
@@ -584,7 +582,7 @@ async function step_kinksSubmit(interaction, parts) {
     flags:      interaction.inGuild() ? MessageFlags.Ephemeral : undefined,
   });
 
-  await postToModQueue(interaction, guildId, userId, await getState(guildId, userId));
+  await postToModQueue(interaction, guildId, userId, updatedState);
 }
 
 // ============================================================
