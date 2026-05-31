@@ -107,6 +107,15 @@ async function markReminderSent(discordUserId, guildId) {
   );
 }
 
+async function getAllUnverifiedUserIds(guildId) {
+  const { rows } = await pool.query(`
+    SELECT discord_user_id FROM members
+    WHERE guild_id = $1
+      AND verification_status NOT IN ('VERIFIED', 'TIMED_OUT', 'REJECTED', 'LEFT_UNVERIFIED')
+  `, [guildId]);
+  return rows.map(r => r.discord_user_id);
+}
+
 async function getVerifiedInOtherGuilds(discordUserId, currentGuildId) {
   const { rows } = await pool.query(
     `SELECT guild_id FROM members
@@ -127,4 +136,5 @@ module.exports = {
   markReminderSent,
   getVerifiedInOtherGuilds,
   getUnverifiedMembers,
+  getAllUnverifiedUserIds,
 };

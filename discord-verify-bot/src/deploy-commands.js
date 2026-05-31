@@ -56,6 +56,12 @@ const commands = [
     .setDescription('Edit welcome and rules messages shown to new members (Admin only)')
     .setDefaultMemberPermissions('8'),
 
+  // /cleanup-left — DB unverified members ko Discord se cross-check karo
+  new SlashCommandBuilder()
+    .setName('cleanup-left')
+    .setDescription('Mark members who left without verifying as LEFT_UNVERIFIED (Admin only)')
+    .setDefaultMemberPermissions('8'),
+
 ].map(cmd => cmd.toJSON());
 
 // ---- Register commands with Discord API ----

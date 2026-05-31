@@ -890,6 +890,7 @@ async function panel_action(interaction, parts) {
   else if (sub === 'rejections')    await panel_showRejections(interaction, guildId);
   else if (sub === 'members')       await panel_showMembers(interaction, guildId);
   else if (sub === 'notifyall')     await panel_notifyAllUnverified(interaction, guildId);
+  else if (sub === 'cleanupleft')   await cmd_cleanupLeft(interaction, guildId);
 }
 
 async function panel_refresh(interaction, guildId) {
@@ -1134,6 +1135,7 @@ async function handleSlashCommand(interaction) {
   else if (cmd === 'setup-mod-panel') await cmd_setupModPanel(interaction);
   else if (cmd === 'edit-config')     await cmd_editConfig(interaction);
   else if (cmd === 'reload-config')   await cmd_reloadConfig(interaction);
+  else if (cmd === 'cleanup-left')    await cmd_cleanupLeft(interaction, interaction.guildId);
   else if (cmd === 'verify-me')       await cmd_verifyMe(interaction);
   else await interaction.reply({ content: 'Unknown command: /' + cmd, flags: MessageFlags.Ephemeral });
 }
@@ -1270,6 +1272,49 @@ async function cmd_reloadConfig(interaction) {
       ? 'Config reloaded for ' + interaction.guildId + '. New settings are now active.'
       : 'No config file found for this guild.',
     flags: MessageFlags.Ephemeral,
+  });
+}
+
+async function cmd_cleanupLeft(interaction, guildId) {
+  if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageRoles) &&
+      !interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
+    return interaction.reply({ content: 'This action is for moderators only.', flags: MessageFlags.Ephemeral });
+  }
+
+  const isButton = interaction.isButton();
+  if (isButton) await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  else           await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+  const guild   = interaction.guild;
+  const userIds = await memberRepo.getAllUnverifiedUserIds(guildId);
+
+  if (userIds.length === 0) {
+    return interaction.editReply({ content: '✅ No unverified members in DB to check.' });
+  }
+
+  const CHUNK    = 100;
+  const presentIds = new Set();
+  for (let i = 0; i < userIds.length; i += CHUNK) {
+    const chunk   = userIds.slice(i, i + CHUNK);
+    const fetched = await guild.members.fetch({ user: chunk }).catch(() => new Map());
+    fetched.forEach((_, id) => presentIds.add(id));
+  }
+
+  const leftIds = userIds.filter(id => !presentIds.has(id));
+  await Promise.all(leftIds.map(id => memberRepo.updateMemberStatus(id, guildId, 'LEFT_UNVERIFIED')));
+
+  logger.info(`Cleanup-left: marked ${leftIds.length}/${userIds.length} as LEFT_UNVERIFIED in guild ${guildId}`);
+
+  await interaction.editReply({
+    content: [
+      `🧹 **Cleanup complete!**`,
+      ``,
+      `📋 Checked **${userIds.length}** unverified members in DB`,
+      `🚪 **${leftIds.length}** marked as LEFT_UNVERIFIED — these people left the server without completing verification. They won't show in the unverified count anymore and won't receive reminders.`,
+      `👥 **${userIds.length - leftIds.length}** still in server — genuinely unverified members who need attention.`,
+      ``,
+      `Refresh the panel to see the updated count.`,
+    ].join('\n'),
   });
 }
 

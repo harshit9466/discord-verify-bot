@@ -392,7 +392,7 @@ function buildModPanelComponents(guildId) {
       .setStyle(ButtonStyle.Primary),
     new ButtonBuilder()
       .setCustomId(`verif:panel:settings:${guildId}`)
-      .setLabel('⚙️ Settings')
+      .setLabel('🔧 Automation')
       .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
       .setCustomId(`verif:panel:rejections:${guildId}`)
@@ -409,6 +409,10 @@ function buildModPanelComponents(guildId) {
       .setCustomId(`verif:panel:notifyall:${guildId}`)
       .setLabel('📢 Notify Unverified')
       .setStyle(ButtonStyle.Danger),
+    new ButtonBuilder()
+      .setCustomId(`verif:panel:cleanupleft:${guildId}`)
+      .setLabel('🧹 Cleanup Left Members')
+      .setStyle(ButtonStyle.Secondary),
   );
 
   const row3 = new ActionRowBuilder().addComponents(
@@ -450,7 +454,7 @@ function buildVerifSettingsComponents(guildId, settings) {
 
   const editBtn = new ButtonBuilder()
     .setCustomId(`verif:panel:stg-edit:${guildId}`)
-    .setLabel('✏️ Edit Hours & Link')
+    .setLabel('✏️ Edit Settings')
     .setStyle(ButtonStyle.Primary);
 
   return new ActionRowBuilder().addComponents(toggleReminder, toggleKick, toggleInvite, editBtn);
