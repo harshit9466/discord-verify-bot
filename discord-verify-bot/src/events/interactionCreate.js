@@ -890,6 +890,8 @@ async function panel_action(interaction, parts) {
   else if (sub === 'stg-edit')      await panel_editSettings(interaction, guildId);
   else if (sub === 'timerange')     await panel_timeRange(interaction, guildId);
   else if (sub === 'rejections')    await panel_showRejections(interaction, guildId);
+  else if (sub === 'members')       await panel_showMembers(interaction, guildId);
+  else if (sub === 'notifyall')     await panel_notifyAllUnverified(interaction, guildId);
 }
 
 async function panel_refresh(interaction, guildId) {
@@ -939,6 +941,82 @@ async function panel_showRejections(interaction, guildId) {
     embeds: [embeds.buildRejectionStatsEmbed(reasons, days)],
     flags:  MessageFlags.Ephemeral,
   });
+}
+
+async function panel_showMembers(interaction, guildId) {
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  try {
+    const rows          = await memberRepo.getUnverifiedMembers(guildId);
+    const config        = getGuildConfig(guildId);
+    const pendingRoleId = config?.roles?.verificationPendingRoleId;
+    const guild         = interaction.guild ?? interaction.client.guilds.cache.get(guildId);
+
+    const notStarted    = [];
+    const pendingReview = [];
+
+    for (const row of rows) {
+      const discordMember = guild?.members.cache.get(row.discord_user_id);
+      if (pendingRoleId && discordMember?.roles.cache.has(pendingRoleId)) {
+        pendingReview.push(row);
+      } else {
+        notStarted.push(row);
+      }
+    }
+
+    await interaction.editReply({
+      embeds: [embeds.buildUnverifiedListEmbed(notStarted, pendingReview)],
+    });
+  } catch (err) {
+    logger.error('Panel members failed:', { error: err.message });
+    await interaction.editReply({ content: 'Failed to fetch member list.' });
+  }
+}
+
+async function panel_notifyAllUnverified(interaction, guildId) {
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  try {
+    const rows = await memberRepo.getUnverifiedMembers(guildId);
+    if (rows.length === 0) {
+      return interaction.editReply({ content: '✅ No unverified members to notify.' });
+    }
+
+    const config        = getGuildConfig(guildId);
+    const pendingRoleId = config?.roles?.verificationPendingRoleId;
+    const vs            = config?.verificationSettings ?? {};
+    const guild         = interaction.guild ?? interaction.client.guilds.cache.get(guildId);
+
+    let sent = 0, failed = 0, skipped = 0;
+
+    for (const row of rows) {
+      try {
+        const discordMember = guild.members.cache.get(row.discord_user_id)
+          ?? await guild.members.fetch(row.discord_user_id).catch(() => null);
+        if (!discordMember) { skipped++; continue; }
+        if (pendingRoleId && discordMember.roles.cache.has(pendingRoleId)) { skipped++; continue; }
+
+        await discordMember.user.send({
+          embeds: [embeds.buildReminderDMEmbed(guild.name, vs.autoKickEnabled, vs.autoKickHours)],
+        });
+        await memberRepo.markReminderSent(row.discord_user_id, guildId);
+        sent++;
+      } catch {
+        failed++;
+      }
+    }
+
+    logger.info(`Manual notify-all by ${interaction.user.tag} in ${guildId}: sent=${sent} failed=${failed} skipped=${skipped}`);
+    await interaction.editReply({
+      content: [
+        `📢 **Notification Complete**`,
+        `✅ Sent: **${sent}**`,
+        `❌ Failed (DMs closed): **${failed}**`,
+        `⏭️ Skipped (not in server or pending review): **${skipped}**`,
+      ].join('\n'),
+    });
+  } catch (err) {
+    logger.error('Panel notifyall failed:', { error: err.message });
+    await interaction.editReply({ content: 'Failed to send notifications.' });
+  }
 }
 
 async function panel_showNotifyPrefs(interaction, guildId) {

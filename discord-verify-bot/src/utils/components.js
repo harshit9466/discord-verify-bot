@@ -398,9 +398,20 @@ function buildModPanelComponents(guildId) {
       .setCustomId(`verif:panel:rejections:${guildId}`)
       .setLabel('📊 Rejections')
       .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId(`verif:panel:members:${guildId}`)
+      .setLabel('📋 Members')
+      .setStyle(ButtonStyle.Secondary),
   );
 
   const row2 = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`verif:panel:notifyall:${guildId}`)
+      .setLabel('📢 Notify Unverified')
+      .setStyle(ButtonStyle.Danger),
+  );
+
+  const row3 = new ActionRowBuilder().addComponents(
     new StringSelectMenuBuilder()
       .setCustomId(`verif:panel:timerange:${guildId}`)
       .setPlaceholder('📅 Stats time range...')
@@ -411,7 +422,7 @@ function buildModPanelComponents(guildId) {
       ),
   );
 
-  return [row1, row2];
+  return [row1, row2, row3];
 }
 
 /**

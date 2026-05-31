@@ -558,6 +558,38 @@ function buildVerifSettingsEmbed(settings) {
 }
 
 /**
+ * Unverified members list — ephemeral, shown from mod panel 📋 Members button
+ * notStarted  = DB rows for members who haven't submitted yet
+ * pendingReview = DB rows for members who submitted and are waiting for mod approval
+ */
+function buildUnverifiedListEmbed(notStarted, pendingReview) {
+  const formatList = (arr) => {
+    if (arr.length === 0) return '_None_';
+    const lines = arr.slice(0, 15).map((m, i) => {
+      const ts = m.first_joined_at
+        ? `<t:${Math.floor(new Date(m.first_joined_at).getTime() / 1000)}:R>`
+        : 'Unknown';
+      const reminded = m.reminder_sent_at ? ' 📬' : '';
+      return `${i + 1}. <@${m.discord_user_id}> — joined ${ts}${reminded}`;
+    });
+    const overflow = arr.length > 15 ? `\n_...and ${arr.length - 15} more_` : '';
+    return lines.join('\n') + overflow;
+  };
+
+  const total = notStarted.length + pendingReview.length;
+
+  return new EmbedBuilder()
+    .setColor(COLORS.YELLOW)
+    .setTitle(`👥 Unverified Members — ${total} total`)
+    .addFields(
+      { name: `🔄 Not Started / In Progress (${notStarted.length})`, value: formatList(notStarted) },
+      { name: `⏳ Pending Mod Review (${pendingReview.length})`,       value: formatList(pendingReview) },
+    )
+    .setFooter({ text: '📬 = reminder already sent  |  Showing up to 50 members total' })
+    .setTimestamp();
+}
+
+/**
  * Generic error embed
  */
 function buildErrorEmbed(message) {
@@ -633,4 +665,5 @@ module.exports = {
   buildVerifSettingsEmbed,
   buildEditMenuEmbed,
   buildErrorEmbed,
+  buildUnverifiedListEmbed,
 };

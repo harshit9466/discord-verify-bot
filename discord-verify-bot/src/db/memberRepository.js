@@ -67,8 +67,20 @@ async function getMembersNeedingReminder(guildId, reminderHours) {
     WHERE guild_id = $1
       AND verification_status NOT IN ('VERIFIED', 'TIMED_OUT', 'REJECTED')
       AND first_joined_at < NOW() - ($2 * INTERVAL '1 hour')
-      AND reminder_sent_at IS NULL
+      AND (reminder_sent_at IS NULL OR reminder_sent_at < NOW() - ($2 * INTERVAL '1 hour'))
   `, [guildId, reminderHours]);
+  return rows;
+}
+
+async function getUnverifiedMembers(guildId) {
+  const { rows } = await pool.query(`
+    SELECT discord_user_id, first_joined_at, reminder_sent_at
+    FROM members
+    WHERE guild_id = $1
+      AND verification_status NOT IN ('VERIFIED', 'TIMED_OUT', 'REJECTED')
+    ORDER BY first_joined_at ASC
+    LIMIT 50
+  `, [guildId]);
   return rows;
 }
 
@@ -108,4 +120,5 @@ module.exports = {
   getMembersNeedingKick,
   markReminderSent,
   getVerifiedInOtherGuilds,
+  getUnverifiedMembers,
 };
