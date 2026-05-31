@@ -20,7 +20,8 @@
     "initiateRoleId":            "1293893529801588788",
     "nsfwOnlyRoleId":            "1295240667303510148",
     "jailedRoleId":              null,
-    "baseRoleId":                null
+    "baseRoleId":                null,
+    "modsRoleId":                "1353775599486898176"
   },
 
   "settings": {

@@ -487,17 +487,27 @@ function buildVerifSettingsModal(guildId, currentSettings) {
 
   const inviteLink = new TextInputBuilder()
     .setCustomId('inviteLink')
-    .setLabel('Server invite link (sent to kicked users)')
+    .setLabel('Server invite link (kick + leave DMs)')
     .setStyle(TextInputStyle.Short)
     .setPlaceholder('https://discord.gg/xxxxx  — leave blank to clear')
     .setValue(s.kickInviteLink || '')
     .setMaxLength(150)
     .setRequired(false);
 
+  const modsRoleId = new TextInputBuilder()
+    .setCustomId('modsRoleId')
+    .setLabel('Mods role ID (pinged in unverified-leave DM)')
+    .setStyle(TextInputStyle.Short)
+    .setPlaceholder('e.g. 971738993953734726  — leave blank to clear')
+    .setValue(s.modsRoleId || '')
+    .setMaxLength(25)
+    .setRequired(false);
+
   modal.addComponents(
     new ActionRowBuilder().addComponents(reminderHours),
     new ActionRowBuilder().addComponents(autoKickHours),
     new ActionRowBuilder().addComponents(inviteLink),
+    new ActionRowBuilder().addComponents(modsRoleId),
   );
 
   return modal;

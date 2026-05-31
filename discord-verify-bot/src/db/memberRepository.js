@@ -17,7 +17,7 @@ async function upsertMemberOnJoin(discordUserId, guildId, username, joinedAt = n
       rejoin_count        = members.rejoin_count + 1,
       reminder_sent_at    = NULL,
       verification_status = CASE
-        WHEN members.verification_status = 'TIMED_OUT' THEN 'PENDING'
+        WHEN members.verification_status IN ('TIMED_OUT', 'LEFT_UNVERIFIED') THEN 'PENDING'
         ELSE members.verification_status
       END,
       username_history    = CASE
@@ -49,7 +49,13 @@ async function saveMemberOnVerify(discordUserId, guildId, { contentPreference, r
 
 async function updateMemberOnLeave(discordUserId, guildId) {
   await pool.query(
-    'UPDATE members SET last_left_at = NOW() WHERE discord_user_id = $1 AND guild_id = $2',
+    `UPDATE members
+     SET last_left_at = NOW(),
+         verification_status = CASE
+           WHEN verification_status IN ('VERIFIED', 'REJECTED') THEN verification_status
+           ELSE 'LEFT_UNVERIFIED'
+         END
+     WHERE discord_user_id = $1 AND guild_id = $2`,
     [discordUserId, guildId]
   );
 }
@@ -65,7 +71,7 @@ async function getMembersNeedingReminder(guildId, reminderHours) {
   const { rows } = await pool.query(`
     SELECT discord_user_id FROM members
     WHERE guild_id = $1
-      AND verification_status NOT IN ('VERIFIED', 'TIMED_OUT', 'REJECTED')
+      AND verification_status NOT IN ('VERIFIED', 'TIMED_OUT', 'REJECTED', 'LEFT_UNVERIFIED')
       AND first_joined_at < NOW() - ($2 * INTERVAL '1 hour')
       AND (reminder_sent_at IS NULL OR reminder_sent_at < NOW() - ($2 * INTERVAL '1 hour'))
   `, [guildId, reminderHours]);
@@ -77,7 +83,7 @@ async function getUnverifiedMembers(guildId) {
     SELECT discord_user_id, first_joined_at, reminder_sent_at, verification_status
     FROM members
     WHERE guild_id = $1
-      AND verification_status NOT IN ('VERIFIED', 'TIMED_OUT', 'REJECTED')
+      AND verification_status NOT IN ('VERIFIED', 'TIMED_OUT', 'REJECTED', 'LEFT_UNVERIFIED')
     ORDER BY first_joined_at ASC
     LIMIT 50
   `, [guildId]);
@@ -88,7 +94,7 @@ async function getMembersNeedingKick(guildId, autoKickHours) {
   const { rows } = await pool.query(`
     SELECT discord_user_id FROM members
     WHERE guild_id = $1
-      AND verification_status NOT IN ('VERIFIED', 'TIMED_OUT', 'REJECTED')
+      AND verification_status NOT IN ('VERIFIED', 'TIMED_OUT', 'REJECTED', 'LEFT_UNVERIFIED')
       AND first_joined_at < NOW() - ($2 * INTERVAL '1 hour')
   `, [guildId, autoKickHours]);
   return rows;

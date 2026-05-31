@@ -544,15 +544,17 @@ function buildVerifSettingsEmbed(settings) {
   const inviteStatus = s.kickInviteEnabled
     ? (s.kickInviteLink ? `✅ ON — \`${s.kickInviteLink}\`` : '✅ ON — *(no link set — edit to add)*')
     : '❌ OFF';
+  const modsRoleStatus = s.modsRoleId ? `<@&${s.modsRoleId}>` : '*(not set)*';
 
   return new EmbedBuilder()
     .setColor(COLORS.BLURPLE)
     .setTitle('⚙️ Verification Settings')
     .setDescription('Configure auto-reminder and auto-kick for unverified members.')
     .addFields(
-      { name: '⏰ Reminder DM',     value: reminderStatus },
-      { name: '🚪 Auto-Kick',       value: kickStatus },
-      { name: '🔗 Invite on Kick',  value: `${inviteStatus}\n*(only applies when auto-kick is ON)*` },
+      { name: '⏰ Reminder DM',       value: reminderStatus },
+      { name: '🚪 Auto-Kick',         value: kickStatus },
+      { name: '🔗 Invite Link',        value: `${inviteStatus}\n*(sent on kick and unverified-leave DM)*` },
+      { name: '👮 Mods Role',          value: `${modsRoleStatus}\n*(mentioned in unverified-leave DM)*` },
     )
     .setFooter({ text: 'Toggle buttons to turn on/off · Edit Hours & Link to change values' });
 }

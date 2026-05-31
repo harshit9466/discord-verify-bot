@@ -1097,6 +1097,7 @@ async function modal_saveVerifSettings(interaction, parts) {
   const reminderHoursRaw = parseInt(interaction.fields.getTextInputValue('reminderHours').trim());
   const autoKickHoursRaw = parseInt(interaction.fields.getTextInputValue('autoKickHours').trim());
   const inviteLink       = interaction.fields.getTextInputValue('inviteLink').trim() || '';
+  const modsRoleId       = interaction.fields.getTextInputValue('modsRoleId').trim() || '';
 
   if (isNaN(reminderHoursRaw) || reminderHoursRaw < 1 || isNaN(autoKickHoursRaw) || autoKickHoursRaw < 1) {
     return interaction.reply({ content: '❌ Invalid hours — enter a positive number (minimum 1).', flags: MessageFlags.Ephemeral });
@@ -1110,6 +1111,7 @@ async function modal_saveVerifSettings(interaction, parts) {
     reminderHours:  reminderHoursRaw,
     autoKickHours:  autoKickHoursRaw,
     kickInviteLink: inviteLink,
+    modsRoleId:     modsRoleId || null,
   };
   await settingsRepo.saveVerifSettings(guildId, updated);
   if (config) config.verificationSettings = updated;

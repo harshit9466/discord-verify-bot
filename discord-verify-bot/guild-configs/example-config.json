@@ -16,7 +16,8 @@
     "travelerRoleId": "ID_OF_TRAVELER_ROLE",
     "initiateRoleId": "ID_OF_INITIATE_ROLE",
     "jailedRoleId": "ID_OF_JAILED_ROLE",
-    "verificationPendingRoleId": "ID_OF_VERIFICATION_PENDING_ROLE"
+    "verificationPendingRoleId": "ID_OF_VERIFICATION_PENDING_ROLE",
+    "modsRoleId": "ID_OF_YOUR_MODS_ROLE"
   },
 
   "settings": {
