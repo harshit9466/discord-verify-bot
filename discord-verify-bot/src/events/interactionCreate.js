@@ -955,8 +955,12 @@ async function panel_showMembers(interaction, guildId) {
     const pendingReview = [];
 
     for (const row of rows) {
+      // DB status is authoritative — works correctly even after bot restart
+      // when guild.members.cache may not be fully populated
+      const isAwaitingMod = row.verification_status === 'AWAITING_MOD';
       const discordMember = guild?.members.cache.get(row.discord_user_id);
-      if (pendingRoleId && discordMember?.roles.cache.has(pendingRoleId)) {
+      const hasPendingRole = pendingRoleId && discordMember?.roles.cache.has(pendingRoleId);
+      if (isAwaitingMod || hasPendingRole) {
         pendingReview.push(row);
       } else {
         notStarted.push(row);

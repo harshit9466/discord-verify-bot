@@ -74,7 +74,7 @@ async function getMembersNeedingReminder(guildId, reminderHours) {
 
 async function getUnverifiedMembers(guildId) {
   const { rows } = await pool.query(`
-    SELECT discord_user_id, first_joined_at, reminder_sent_at
+    SELECT discord_user_id, first_joined_at, reminder_sent_at, verification_status
     FROM members
     WHERE guild_id = $1
       AND verification_status NOT IN ('VERIFIED', 'TIMED_OUT', 'REJECTED')

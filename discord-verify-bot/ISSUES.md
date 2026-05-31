@@ -26,7 +26,7 @@ After any bot restart, `guild.members.cache` is not fully populated. Members who
 Add `verification_status` to `getUnverifiedMembers` SELECT.  
 In `panel_showMembers`, use `row.verification_status === 'AWAITING_MOD'` as primary check, Discord role cache as fallback.
 
-**Status:** [ ] Pending
+**Status:** [x] Fixed
 
 ---
 
