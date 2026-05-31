@@ -72,7 +72,7 @@ Plus separate `add` calls for the verified role and base role = 12–22 sequenti
 **Fix:**  
 Collect all role IDs to add (verified + base + selected), remove IDs that don't exist in guild cache, then call `member.roles.set(finalRoleIds)` once — same pattern as `mod_approve`.
 
-**Status:** [ ] Pending
+**Status:** [x] Fixed
 
 ---
 

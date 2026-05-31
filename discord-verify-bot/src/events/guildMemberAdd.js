@@ -92,28 +92,27 @@ async function autoVerifyReturningMember(member, dbRecord, config, guild) {
     return false;
   }
 
-  // Assign verified role
-  await member.roles.add(verifiedRole).catch(() => {});
+  // Compute full final role set in one pass — single roles.set() replaces N sequential add/remove calls
+  const toRemoveIds = new Set([
+    config.roles.unverifiedRoleId,
+  ].filter(Boolean));
 
-  // Assign base role
-  if (config.roles.baseRoleId) {
-    const baseRole = guild.roles.cache.get(config.roles.baseRoleId);
-    if (baseRole) await member.roles.add(baseRole).catch(() => {});
-  }
+  const toAddIds = [
+    roleId,
+    config.roles.baseRoleId,
+    ...(dbRecord.selected_roles ? Object.values(dbRecord.selected_roles).flat() : []),
+  ].filter(id => id && guild.roles.cache.has(id));
 
-  // Re-add stored interest/preference roles
-  if (dbRecord.selected_roles) {
-    for (const roleIds of Object.values(dbRecord.selected_roles)) {
-      for (const id of roleIds) {
-        const r = guild.roles.cache.get(id);
-        if (r) await member.roles.add(r).catch(() => {});
-      }
-    }
-  }
+  const finalRoleIds = [
+    ...new Set([
+      ...member.roles.cache.filter(r => !toRemoveIds.has(r.id)).map(r => r.id),
+      ...toAddIds,
+    ]),
+  ];
 
-  // Remove @Unverified
-  const unverifiedRole = guild.roles.cache.get(config.roles.unverifiedRoleId);
-  if (unverifiedRole) await member.roles.remove(unverifiedRole).catch(() => {});
+  await member.roles.set(finalRoleIds).catch(err =>
+    logger.warn(`Auto-verify: roles.set failed for ${member.user.tag}: ${err.message}`)
+  );
 
   // DM user
   const firstJoinedMs = dbRecord.first_joined_at?.getTime() ?? Date.now();
