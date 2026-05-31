@@ -106,7 +106,7 @@ async function clearState(guildId, userId) {
 
 async function findStateByUserId(userId) {
   const { rows } = await pool.query(
-    'SELECT * FROM verification_states WHERE user_id = $1 LIMIT 1',
+    'SELECT * FROM verification_states WHERE user_id = $1 ORDER BY last_activity_at DESC LIMIT 1',
     [userId],
   );
   return rows[0] ? rowToState(rows[0]) : null;
@@ -114,7 +114,8 @@ async function findStateByUserId(userId) {
 
 async function cleanupExpired() {
   const { rowCount } = await pool.query(
-    `DELETE FROM verification_states WHERE last_activity_at < NOW() - INTERVAL '${TIMEOUT_MINUTES} minutes'`,
+    `DELETE FROM verification_states WHERE last_activity_at < NOW() - ($1 * INTERVAL '1 minute')`,
+    [TIMEOUT_MINUTES],
   );
   return rowCount ?? 0;
 }

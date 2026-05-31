@@ -159,7 +159,7 @@ Still bad practice: mixing template literals into SQL makes it a habit.
 **Fix:**  
 Use parameterized query: `WHERE last_activity_at < NOW() - ($1 * INTERVAL '1 minute')` with `[TIMEOUT_MINUTES]`.
 
-**Status:** [ ] Pending
+**Status:** [x] Fixed
 
 ---
 
@@ -180,7 +180,7 @@ If a user is simultaneously verifying in two guilds, this returns whichever guil
 For DM mode: no change needed — by design.  
 Optional: add `ORDER BY last_activity_at DESC LIMIT 1` so the most-recently-active guild's state wins, which is more predictable than random row order.
 
-**Status:** [ ] Pending
+**Status:** [x] Fixed
 
 ---
 
