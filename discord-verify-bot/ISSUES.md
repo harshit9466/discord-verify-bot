@@ -141,7 +141,7 @@ Currently safe because only `interactionCreate.js` imports it and the bot is alw
 **Fix:**  
 Move the `setInterval` into an exported `startCleanupJob()` function. Call it once from `ready.js` after bot is connected.
 
-**Status:** [ ] Pending
+**Status:** [x] Fixed
 
 ---
 

@@ -9,6 +9,7 @@ const { ActivityType } = require('discord.js');
 const logger = require('../utils/logger');
 const { getAllConfiguredGuilds } = require('../config/configManager');
 const { getTotalVerifiedCount } = require('../db/statsRepository');
+const { startCleanupJob } = require('../utils/stateManager');
 
 async function refreshActivity(client) {
   const count = await getTotalVerifiedCount().catch(() => 0);
@@ -36,7 +37,8 @@ module.exports = {
     }
 
     await refreshActivity(client);
-    // Refresh every 10 minutes
     setInterval(() => refreshActivity(client), 10 * 60 * 1000);
+
+    startCleanupJob();
   },
 };

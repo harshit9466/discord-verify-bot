@@ -44,14 +44,15 @@ async function findStateByUserId(userId) {
   return stateRepo.findStateByUserId(userId);
 }
 
-// Cleanup expired sessions every 10 minutes
-setInterval(async () => {
-  try {
-    const cleaned = await stateRepo.cleanupExpired();
-    if (cleaned > 0) logger.debug(`State cleanup: removed ${cleaned} expired sessions`);
-  } catch (err) {
-    logger.error('State cleanup failed:', { error: err.message });
-  }
-}, 10 * 60 * 1000);
+function startCleanupJob() {
+  setInterval(async () => {
+    try {
+      const cleaned = await stateRepo.cleanupExpired();
+      if (cleaned > 0) logger.debug(`State cleanup: removed ${cleaned} expired sessions`);
+    } catch (err) {
+      logger.error('State cleanup failed:', { error: err.message });
+    }
+  }, 10 * 60 * 1000);
+}
 
-module.exports = { STEPS, initState, getState, updateState, clearState, findStateByUserId };
+module.exports = { STEPS, initState, getState, updateState, clearState, findStateByUserId, startCleanupJob };
