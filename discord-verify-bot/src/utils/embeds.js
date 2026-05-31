@@ -72,14 +72,18 @@ function buildRoleSelectionEmbed(config, categoryIndex) {
  * Content preference embed — Step 3 (SFW / SFW+NSFW / NSFW Only)
  */
 function buildContentPrefEmbed(config) {
+  const sfwMention    = config.roles.travelerRoleId   ? `<@&${config.roles.travelerRoleId}>`  : 'SFW role';
+  const nsfwMention   = config.roles.initiateRoleId   ? `<@&${config.roles.initiateRoleId}>`  : 'SFW+NSFW role';
+  const nsfwOnlyMention = config.roles.nsfwOnlyRoleId ? `<@&${config.roles.nsfwOnlyRoleId}>` : 'NSFW-only role';
+
   let desc = `Choose which content you'd like access to:\n\n`;
-  desc += `🌞 **SFW Only** → **@Traveler** role\n`;
+  desc += `🌞 **SFW Only** → ${sfwMention}\n`;
   desc += `Access to all regular (non-adult) channels\n\n`;
 
   if (config.settings.nsfwEnabled) {
-    desc += `🌗 **SFW + NSFW** → **@Initiate** role\n`;
+    desc += `🌗 **SFW + NSFW** → ${nsfwMention}\n`;
     desc += `Access to ALL channels including adult content\n\n`;
-    desc += `🔞 **NSFW Only** → NSFW-only role\n`;
+    desc += `🔞 **NSFW Only** → ${nsfwOnlyMention}\n`;
     desc += `Access to adult-only channels only\n\n`;
     desc += `*You must be **18+** to select any NSFW option.*`;
   }
@@ -161,7 +165,7 @@ function buildRejectedEmbed(reason) {
 /**
  * Mod queue card — mods ko dikhai deta hai (formatted info + Approve/Reject buttons)
  */
-function buildModQueueEmbed(member, state, config) {
+function buildModQueueEmbed(member, state, config, crossVerifiedIn = []) {
   const { intro, contentPreference, selectedRoles } = state;
 
   // Har category ke selected roles ko readable string mein convert karo
@@ -258,6 +262,13 @@ function buildModQueueEmbed(member, state, config) {
     embed.addFields({
       name:  '✏️ Changes from Previous Submission',
       value: changes.length > 0 ? changes.join('\n') : '_No changes detected_',
+    });
+  }
+
+  if (crossVerifiedIn.length > 0) {
+    embed.addFields({
+      name:  '🌐 Cross-Server',
+      value: `✅ Already verified in: **${crossVerifiedIn.join(', ')}**`,
     });
   }
 

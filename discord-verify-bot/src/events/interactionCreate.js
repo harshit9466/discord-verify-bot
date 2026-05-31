@@ -831,13 +831,19 @@ async function postToModQueue(interaction, guildId, userId, state) {
     const pendingRole = guild.roles.cache.get(config.roles.verificationPendingRoleId);
     if (pendingRole) await member.roles.add(pendingRole).catch(() => {});
 
+    // Cross-server verification check
+    const otherGuildIds   = await memberRepo.getVerifiedInOtherGuilds(userId, guildId).catch(() => []);
+    const crossVerifiedIn = otherGuildIds
+      .map(gid => getGuildConfig(gid)?.guildName)
+      .filter(Boolean);
+
     // Ping subscribed mods
     const subscribers = await modSubRepo.getEnabledSubscribers(guildId).catch(() => []);
     const mentions = subscribers.map(s => `<@${s.discord_user_id}>`).join(' ');
 
     const modMsg = await modQueueChannel.send({
       content:    mentions || undefined,
-      embeds:     [embeds.buildModQueueEmbed(member, state, config)],
+      embeds:     [embeds.buildModQueueEmbed(member, state, config, crossVerifiedIn)],
       components: [components.buildModQueueButtons(guildId, userId)],
     });
 

@@ -89,6 +89,15 @@ async function markReminderSent(discordUserId, guildId) {
   );
 }
 
+async function getVerifiedInOtherGuilds(discordUserId, currentGuildId) {
+  const { rows } = await pool.query(
+    `SELECT guild_id FROM members
+     WHERE discord_user_id = $1 AND guild_id != $2 AND verification_status = 'VERIFIED'`,
+    [discordUserId, currentGuildId],
+  );
+  return rows.map(r => r.guild_id);
+}
+
 module.exports = {
   findMember,
   upsertMemberOnJoin,
@@ -98,4 +107,5 @@ module.exports = {
   getMembersNeedingReminder,
   getMembersNeedingKick,
   markReminderSent,
+  getVerifiedInOtherGuilds,
 };
