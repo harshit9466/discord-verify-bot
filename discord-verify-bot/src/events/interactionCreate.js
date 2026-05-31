@@ -32,6 +32,7 @@ module.exports = {
 
       if      (interaction.isButton())            await handleButton(interaction, parts);
       else if (interaction.isStringSelectMenu())  await handleSelectMenu(interaction, parts);
+      else if (interaction.isRoleSelectMenu())    await handleRoleSelectMenu(interaction, parts);
       else if (interaction.isModalSubmit())       await handleModalSubmit(interaction, parts);
 
     } catch (err) {
@@ -64,9 +65,13 @@ async function handleButton(interaction, parts) {
 }
 
 async function handleSelectMenu(interaction, parts) {
-  if      (parts[1] === 'select')       await step_roleSelect(interaction, parts);
+  if      (parts[1] === 'select')        await step_roleSelect(interaction, parts);
   else if (parts[1] === 'editrolespick') await step_editRolesPick(interaction, parts);
-  else if (parts[1] === 'panel')        await panel_action(interaction, parts);
+  else if (parts[1] === 'panel')         await panel_action(interaction, parts);
+}
+
+async function handleRoleSelectMenu(interaction, parts) {
+  if (parts[1] === 'panel') await panel_action(interaction, parts);
 }
 
 async function handleModalSubmit(interaction, parts) {
@@ -882,10 +887,12 @@ async function panel_action(interaction, parts) {
   else if (sub === 'notify')        await panel_showNotifyPrefs(interaction, guildId);
   else if (sub === 'notify-toggle') await panel_toggleNotify(interaction, guildId);
   else if (sub === 'settings')      await panel_showSettings(interaction, guildId);
-  else if (sub === 'stg-reminder')  await panel_toggleSetting(interaction, guildId, 'reminderEnabled');
-  else if (sub === 'stg-kick')      await panel_toggleSetting(interaction, guildId, 'autoKickEnabled');
-  else if (sub === 'stg-invite')    await panel_toggleSetting(interaction, guildId, 'kickInviteEnabled');
-  else if (sub === 'stg-edit')      await panel_editSettings(interaction, guildId);
+  else if (sub === 'stg-reminder')   await panel_toggleSetting(interaction, guildId, 'reminderEnabled');
+  else if (sub === 'stg-kick')       await panel_toggleSetting(interaction, guildId, 'autoKickEnabled');
+  else if (sub === 'stg-invite')     await panel_toggleSetting(interaction, guildId, 'kickInviteEnabled');
+  else if (sub === 'stg-edit')       await panel_editSettings(interaction, guildId);
+  else if (sub === 'stg-mods-role')  await panel_setModsRole(interaction, guildId);
+  else if (sub === 'mods-role-sel')  await panel_saveModsRole(interaction, guildId);
   else if (sub === 'timerange')     await panel_timeRange(interaction, guildId);
   else if (sub === 'rejections')    await panel_showRejections(interaction, guildId);
   else if (sub === 'members')       await panel_showMembers(interaction, guildId);
@@ -1080,6 +1087,36 @@ async function panel_toggleSetting(interaction, guildId, key) {
   });
 }
 
+async function panel_setModsRole(interaction, guildId) {
+  const config     = getGuildConfig(guildId);
+  const dbSettings = await settingsRepo.getVerifSettings(guildId).catch(() => null);
+  const current    = dbSettings ?? config?.verificationSettings ?? {};
+  const currentRole = current.modsRoleId
+    ? `Current: <@&${current.modsRoleId}>\n\n`
+    : '';
+  await interaction.reply({
+    content: `${currentRole}Select the role to ping in unverified-leave DMs:`,
+    components: components.buildModsRoleSelectComponents(guildId),
+    flags: MessageFlags.Ephemeral,
+  });
+}
+
+async function panel_saveModsRole(interaction, guildId) {
+  const roleId     = interaction.values[0];
+  const config     = getGuildConfig(guildId);
+  const dbSettings = await settingsRepo.getVerifSettings(guildId).catch(() => null);
+  const current    = dbSettings ?? config?.verificationSettings ?? {};
+  const updated    = { ...current, modsRoleId: roleId };
+
+  await settingsRepo.saveVerifSettings(guildId, updated);
+  if (config) config.verificationSettings = updated;
+
+  await interaction.update({
+    content: `✅ Mods role set to <@&${roleId}>. Members who leave unverified will be directed to ping this role.`,
+    components: [],
+  });
+}
+
 async function panel_editSettings(interaction, guildId) {
   const config     = getGuildConfig(guildId);
   const dbSettings = await settingsRepo.getVerifSettings(guildId).catch(() => null);
@@ -1098,7 +1135,6 @@ async function modal_saveVerifSettings(interaction, parts) {
   const reminderHoursRaw = parseInt(interaction.fields.getTextInputValue('reminderHours').trim());
   const autoKickHoursRaw = parseInt(interaction.fields.getTextInputValue('autoKickHours').trim());
   const inviteLink       = interaction.fields.getTextInputValue('inviteLink').trim() || '';
-  const modsRoleId       = interaction.fields.getTextInputValue('modsRoleId').trim() || '';
 
   if (isNaN(reminderHoursRaw) || reminderHoursRaw < 1 || isNaN(autoKickHoursRaw) || autoKickHoursRaw < 1) {
     return interaction.reply({ content: '❌ Invalid hours — enter a positive number (minimum 1).', flags: MessageFlags.Ephemeral });
@@ -1112,7 +1148,6 @@ async function modal_saveVerifSettings(interaction, parts) {
     reminderHours:  reminderHoursRaw,
     autoKickHours:  autoKickHoursRaw,
     kickInviteLink: inviteLink,
-    modsRoleId:     modsRoleId || null,
   };
   await settingsRepo.saveVerifSettings(guildId, updated);
   if (config) config.verificationSettings = updated;

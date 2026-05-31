@@ -20,6 +20,7 @@ const {
   ButtonStyle,
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
+  RoleSelectMenuBuilder,
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
@@ -457,7 +458,12 @@ function buildVerifSettingsComponents(guildId, settings) {
     .setLabel('✏️ Edit Settings')
     .setStyle(ButtonStyle.Primary);
 
-  return new ActionRowBuilder().addComponents(toggleReminder, toggleKick, toggleInvite, editBtn);
+  const modsRoleBtn = new ButtonBuilder()
+    .setCustomId(`verif:panel:stg-mods-role:${guildId}`)
+    .setLabel(s.modsRoleId ? '👮 Mods Role: ✅' : '👮 Set Mods Role')
+    .setStyle(ButtonStyle.Secondary);
+
+  return new ActionRowBuilder().addComponents(toggleReminder, toggleKick, toggleInvite, editBtn, modsRoleBtn);
 }
 
 /**
@@ -498,23 +504,25 @@ function buildVerifSettingsModal(guildId, currentSettings) {
     .setMaxLength(150)
     .setRequired(false);
 
-  const modsRoleId = new TextInputBuilder()
-    .setCustomId('modsRoleId')
-    .setLabel('Mods role ID (pinged in unverified-leave DM)')
-    .setStyle(TextInputStyle.Short)
-    .setPlaceholder('e.g. 971738993953734726  — leave blank to clear')
-    .setValue(s.modsRoleId || '')
-    .setMaxLength(25)
-    .setRequired(false);
-
   modal.addComponents(
     new ActionRowBuilder().addComponents(reminderHours),
     new ActionRowBuilder().addComponents(autoKickHours),
     new ActionRowBuilder().addComponents(inviteLink),
-    new ActionRowBuilder().addComponents(modsRoleId),
   );
 
   return modal;
+}
+
+function buildModsRoleSelectComponents(guildId) {
+  return [
+    new ActionRowBuilder().addComponents(
+      new RoleSelectMenuBuilder()
+        .setCustomId(`verif:panel:mods-role-sel:${guildId}`)
+        .setPlaceholder('Select the mods role...')
+        .setMinValues(1)
+        .setMaxValues(1),
+    ),
+  ];
 }
 
 /**
@@ -712,4 +720,5 @@ module.exports = {
   buildEditBackButton,
   buildEditRoleButtons,
   buildEditConfigModal,
+  buildModsRoleSelectComponents,
 };

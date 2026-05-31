@@ -474,9 +474,11 @@ function buildModPanelEmbed(stats, subscriberCount, days = 7) {
       // Divider
       { name: '​',             value: '──────────────────────',    inline: false },
       // Row 3 — current queue status
-      { name: '👥 Not Started',     value: `**${stats.totalUnverified}**`,    inline: true },
-      { name: '⏳ Pending Review',  value: `**${stats.totalPendingReview}**`, inline: true },
-      { name: '🔔 Subscribed Mods', value: `**${subscriberCount}**`,          inline: true },
+      { name: '👥 Not Started',      value: `**${stats.totalUnverified}**`,     inline: true },
+      { name: '⏳ Pending Review',   value: `**${stats.totalPendingReview}**`,  inline: true },
+      { name: '🚪 Left Unverified',  value: `**${stats.totalLeftUnverified}**`, inline: true },
+      // Row 4
+      { name: '🔔 Subscribed Mods',  value: `**${subscriberCount}**`,           inline: true },
     )
     .setFooter({ text: 'Last refreshed' })
     .setTimestamp();
