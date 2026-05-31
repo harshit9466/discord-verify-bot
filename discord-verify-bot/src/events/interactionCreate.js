@@ -677,6 +677,7 @@ async function mod_approve(interaction, guildId, userId, config) {
             ?? await guild.channels.fetch(config.channels.introChannelId).catch(() => null);
           if (introChannel) {
             await introChannel.send({
+              content:    `<@${userId}>`,
               embeds:     [embeds.buildPublicIntroEmbed(member, state, config)],
               components: [components.buildIntroChannelButtons(userId)],
             }).catch(err => logger.warn('Failed to post intro channel message for ' + member.user.tag + ': ' + err.message));
