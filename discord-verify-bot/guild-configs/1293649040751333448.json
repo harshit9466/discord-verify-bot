@@ -1,0 +1,212 @@
+{
+  "guildId": "1293649040751333448",
+  "guildName": "Indian Queers",
+
+  "channels": {
+    "welcomeChannelId":      "1510716396625989853",
+    "verifyChannelId":       "1510716396625989853",
+    "modQueueChannelId":     "1510716668685320464",
+    "logChannelId":          "1510716991575556247",
+    "accountClaimChannelId": null,
+    "introChannelId":        "1330966644389974159",
+    "verifiedLogChannelId":  "1510717346421936219",
+    "rejectedLogChannelId":  "1510717459492245584"
+  },
+
+  "roles": {
+    "unverifiedRoleId":          "1510699589571711068",
+    "verificationPendingRoleId": "1510715018902245426",
+    "travelerRoleId":            "1295863986503421962",
+    "initiateRoleId":            "1293893529801588788",
+    "nsfwOnlyRoleId":            "1295240667303510148",
+    "jailedRoleId":              null,
+    "baseRoleId":                null
+  },
+
+  "settings": {
+    "nsfwEnabled":              true,
+    "verificationTimeoutHours": 24,
+    "introMinLength":           30,
+    "introMaxLength":           500,
+    "requireRoleSelection":     true,
+    "verificationMode":         "channel"
+  },
+
+  "verificationSettings": {
+    "reminderEnabled":   false,
+    "reminderHours":     12,
+    "autoKickEnabled":   false,
+    "autoKickHours":     24,
+    "kickInviteEnabled": false,
+    "kickInviteLink":    ""
+  },
+
+  "roleCategories": [
+    {
+      "name":        "Gender",
+      "description": "Select your gender identity (pick one)",
+      "minSelect":   1,
+      "maxSelect":   1,
+      "roles": [
+        { "id": "1295854445921435770", "label": "Sissy",       "emoji": "🎀" },
+        { "id": "1295854977687752748", "label": "Genderfluid", "emoji": "🌊" },
+        { "id": "1295854690722119682", "label": "Trans Femme", "emoji": "🌸" },
+        { "id": "1295854884662546493", "label": "Woman",       "emoji": "💜" },
+        { "id": "1295855103684771870", "label": "Femboy",      "emoji": "🌺" },
+        { "id": "1295855221284540498", "label": "Trans Masc",  "emoji": "💙" },
+        { "id": "1295855358610509884", "label": "Non-Binary",  "emoji": "💛" },
+        { "id": "1295854819990442159", "label": "Man",         "emoji": "🔵" },
+        { "id": "1295855458262712330", "label": "Agender",     "emoji": "⚪" }
+      ]
+    },
+    {
+      "name":        "Pronouns",
+      "description": "Select your pronouns (pick one)",
+      "minSelect":   1,
+      "maxSelect":   1,
+      "roles": [
+        { "id": "1295864586481959002", "label": "She/Her",   "emoji": "💜" },
+        { "id": "1295864489346072659", "label": "He/Him",    "emoji": "💙" },
+        { "id": "1295864676617556008", "label": "They/Them", "emoji": "💛" },
+        { "id": "1295864726370123853", "label": "Ask",       "emoji": "❓" }
+      ]
+    },
+    {
+      "name":        "Age Range",
+      "description": "Select your age range (pick one)",
+      "minSelect":   1,
+      "maxSelect":   1,
+      "roles": [
+        { "id": "1295852364334501962", "label": "18–22", "emoji": "🌱" },
+        { "id": "1295852698142244926", "label": "23–27", "emoji": "🌿" },
+        { "id": "1295852900203106435", "label": "28–32", "emoji": "🌳" },
+        { "id": "1295853018809368656", "label": "33–37", "emoji": "🍀" },
+        { "id": "1295853124107501598", "label": "38–45", "emoji": "🍃" },
+        { "id": "1295853214616387715", "label": "45+",   "emoji": "🌲" }
+      ]
+    },
+    {
+      "name":        "BDSM",
+      "description": "Select your BDSM identity (pick one)",
+      "minSelect":   1,
+      "maxSelect":   1,
+      "roles": [
+        { "id": "1295862095593603112", "label": "Sub",     "emoji": "🔗" },
+        { "id": "1295861979269042236", "label": "Switch",  "emoji": "🔄" },
+        { "id": "1295861889376583681", "label": "Domme",   "emoji": "👑" },
+        { "id": "1295862168603983904", "label": "Vanilla", "emoji": "🍦" }
+      ]
+    },
+    {
+      "name":        "Position",
+      "description": "Select your position preference (pick all that apply)",
+      "minSelect":   1,
+      "maxSelect":   3,
+      "roles": [
+        { "id": "1295858337107410975", "label": "Top",    "emoji": "⬆️" },
+        { "id": "1295858457194270730", "label": "Bottom", "emoji": "⬇️" },
+        { "id": "1295858390756626572", "label": "Verse",  "emoji": "↕️" }
+      ]
+    },
+    {
+      "name":        "Relationship Status",
+      "description": "Select your relationship status (pick all that apply)",
+      "minSelect":   1,
+      "maxSelect":   7,
+      "roles": [
+        { "id": "1295856258364211200", "label": "Single – Not Looking", "emoji": "🚫" },
+        { "id": "1295856370293145600", "label": "Ready to Mingle",      "emoji": "💘" },
+        { "id": "1295856917452820642", "label": "Taken",                "emoji": "💍" },
+        { "id": "1295856529295151225", "label": "Open Relationship",    "emoji": "💞" },
+        { "id": "1295857233883562037", "label": "E-Dating",             "emoji": "💻" },
+        { "id": "1295857035153510490", "label": "Long Distance",        "emoji": "✈️" },
+        { "id": "1295857391329611786", "label": "Polyamorous",          "emoji": "🌈" }
+      ]
+    },
+    {
+      "name":        "DM Preference",
+      "description": "How open are you to DMs? (pick one)",
+      "minSelect":   1,
+      "maxSelect":   1,
+      "roles": [
+        { "id": "1295862613816774817", "label": "Open DMs",        "emoji": "📬" },
+        { "id": "1295862881266438145", "label": "Ask for DMs",     "emoji": "🙋" },
+        { "id": "1295862990314274857", "label": "Closed DMs",      "emoji": "🔒" },
+        { "id": "1295863095477932073", "label": "Open for Dommes", "emoji": "👑" },
+        { "id": "1295863189845708853", "label": "Open for Subs",   "emoji": "🔗" }
+      ]
+    },
+    {
+      "name":        "Friend Requests",
+      "description": "Your friend request preference (pick one)",
+      "minSelect":   1,
+      "maxSelect":   1,
+      "roles": [
+        { "id": "1295857925818028102", "label": "Open Friend Requests",   "emoji": "🤝" },
+        { "id": "1295858101177548872", "label": "Ask to Friend",          "emoji": "🙋" },
+        { "id": "1295858204785377365", "label": "Closed Friend Requests", "emoji": "🔒" }
+      ]
+    },
+    {
+      "name":        "Interested In",
+      "description": "Who are you interested in? (pick all that apply)",
+      "minSelect":   1,
+      "maxSelect":   6,
+      "roles": [
+        { "id": "1295860039118098432", "label": "Into Sissies",           "emoji": "🎀" },
+        { "id": "1295860211793399900", "label": "Into Trans Femme",       "emoji": "🌸" },
+        { "id": "1295860356387704943", "label": "Into Non-Binary People", "emoji": "🏳️" },
+        { "id": "1295860439196106802", "label": "Into Women",             "emoji": "♀️" },
+        { "id": "1295860516526362734", "label": "Into Men",               "emoji": "♂️" },
+        { "id": "1295860648479031347", "label": "Into Trans Masc",        "emoji": "💙" }
+      ]
+    },
+    {
+      "name":        "Looking For",
+      "description": "What are you looking for here? (pick all that apply)",
+      "minSelect":   1,
+      "maxSelect":   7,
+      "roles": [
+        { "id": "1295860934199218198", "label": "LF: Dom",      "emoji": "👑" },
+        { "id": "1295861054902894593", "label": "LF: Sub",      "emoji": "🔗" },
+        { "id": "1295861165255168084", "label": "LF: Roleplay", "emoji": "🎭" },
+        { "id": "1295861281563217981", "label": "LF: Friends",  "emoji": "🤝" },
+        { "id": "1295861427382259742", "label": "Long Term",    "emoji": "💍" },
+        { "id": "1295861510358171698", "label": "Short Term",   "emoji": "⚡" },
+        { "id": "1295861585880940544", "label": "Not Looking",  "emoji": "🚫" }
+      ]
+    },
+    {
+      "name":        "Location",
+      "description": "Where are you from? (optional)",
+      "minSelect":   0,
+      "maxSelect":   1,
+      "roles": [
+        { "id": "1295865030926930042", "label": "South Asia (Desi)", "emoji": "🌏" },
+        { "id": "1295865433878167643", "label": "Asia",              "emoji": "🌏" },
+        { "id": "1295865773977243728", "label": "Europe",            "emoji": "🌍" },
+        { "id": "1295865914247352360", "label": "Africa",            "emoji": "🌍" },
+        { "id": "1295866355798638622", "label": "North America",     "emoji": "🌎" },
+        { "id": "1295866629632032820", "label": "South America",     "emoji": "🌎" },
+        { "id": "1295866804295434333", "label": "Australia",         "emoji": "🌏" }
+      ]
+    },
+    {
+      "name":        "Roleplay",
+      "description": "Are you looking for roleplay? (optional)",
+      "minSelect":   0,
+      "maxSelect":   1,
+      "roles": [
+        { "id": "1295866927134146630", "label": "Looking for Roleplay", "emoji": "🎭" }
+      ]
+    }
+  ],
+
+  "messages": {
+    "welcomeTitle":       "Welcome! 👋 Let's get you verified",
+    "welcomeDescription": "Hey! Before you can access the server, complete a quick **2-minute verification**.\n\nThis keeps our community safe and lets us personalise your experience.\n\nClick below to begin! 🔐",
+    "rulesTitle":         "📜 Server Rules",
+    "rulesText":          "1. Be respectful to all members\n2. No harassment or hate speech of any kind\n3. Follow Discord's Terms of Service — you must be **18+** to access this server\n4. No spamming or unsolicited DMs\n5. Keep content in appropriate channels\n6. Respect everyone's boundaries — consent is everything\n7. No sharing of anyone's personal information without consent\n\nBy clicking **I Agree**, you confirm you are **18 or older** and will follow these rules.",
+    "dmFailedMessage":    "Hey {username}! Please enable DMs from server members so I can guide you through verification, then check <#{welcomeChannelId}> to get started!"
+  }
+}
