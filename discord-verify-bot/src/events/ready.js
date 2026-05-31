@@ -5,12 +5,22 @@
 // Bot start hone ke baad yahan status set hota hai
 // ============================================================
 
+const { ActivityType } = require('discord.js');
 const logger = require('../utils/logger');
 const { getAllConfiguredGuilds } = require('../config/configManager');
+const { getTotalVerifiedCount } = require('../db/statsRepository');
+
+async function refreshActivity(client) {
+  const count = await getTotalVerifiedCount().catch(() => 0);
+  client.user.setPresence({
+    activities: [{ name: `${count} members verified`, type: ActivityType.Watching }],
+    status: 'online',
+  });
+}
 
 module.exports = {
   name: 'clientReady',
-  once: true, // Sirf ek baar
+  once: true,
 
   async execute(client) {
     logger.info(`✅ Bot is ONLINE as: ${client.user.tag}`);
@@ -25,11 +35,8 @@ module.exports = {
       logger.info(`⚙️  Configured guilds: ${configuredGuilds.join(', ')}`);
     }
 
-    // Bot ka Discord status set karo
-    // Type 3 = "Watching"
-    client.user.setPresence({
-      activities: [{ name: 'Verifying members...', type: 3 }],
-      status: 'online',
-    });
+    await refreshActivity(client);
+    // Refresh every 10 minutes
+    setInterval(() => refreshActivity(client), 10 * 60 * 1000);
   },
 };

@@ -49,4 +49,11 @@ async function getTopRejectionReasons(guildId, days = 30, limit = 5) {
   }));
 }
 
-module.exports = { getStats, getTopRejectionReasons };
+async function getTotalVerifiedCount() {
+  const { rows } = await pool.query(
+    `SELECT COUNT(*) FROM members WHERE verification_status = 'VERIFIED'`
+  );
+  return parseInt(rows[0].count);
+}
+
+module.exports = { getStats, getTopRejectionReasons, getTotalVerifiedCount };
