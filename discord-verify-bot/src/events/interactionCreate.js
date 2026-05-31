@@ -1199,10 +1199,11 @@ async function cmd_setupModPanel(interaction) {
 
     await panelMsg.pin().catch(() => logger.warn('Could not pin mod panel — pin it manually'));
 
-    saveGuildConfig(interaction.guildId, {
-      panelMessageId: panelMsg.id,
-      panelChannelId: interaction.channelId,
-    });
+    const panelData = { panelMessageId: panelMsg.id, panelChannelId: interaction.channelId };
+    // Persist to DB so panel survives Railway redeploys (JSON file is ephemeral on Railway)
+    await settingsRepo.savePanelConfig(interaction.guildId, panelData);
+    // Also update in-memory config immediately so auto-refresh works without restart
+    saveGuildConfig(interaction.guildId, panelData);
 
     await interaction.editReply({ content: '✅ Mod panel posted and pinned in this channel!' });
     logger.info('/setup-mod-panel run by ' + interaction.user.tag);

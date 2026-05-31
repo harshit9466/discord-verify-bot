@@ -32,4 +32,20 @@ async function saveConfigOverrides(guildId, overrides) {
   `, [guildId, JSON.stringify(overrides)]);
 }
 
-module.exports = { getVerifSettings, saveVerifSettings, getConfigOverrides, saveConfigOverrides };
+async function getPanelConfig(guildId) {
+  const { rows } = await pool.query(
+    'SELECT panel FROM guild_settings WHERE guild_id = $1',
+    [guildId]
+  );
+  return rows[0]?.panel ?? null;
+}
+
+async function savePanelConfig(guildId, panelData) {
+  await pool.query(`
+    INSERT INTO guild_settings (guild_id, panel)
+    VALUES ($1, $2::jsonb)
+    ON CONFLICT (guild_id) DO UPDATE SET panel = EXCLUDED.panel
+  `, [guildId, JSON.stringify(panelData)]);
+}
+
+module.exports = { getVerifSettings, saveVerifSettings, getConfigOverrides, saveConfigOverrides, getPanelConfig, savePanelConfig };

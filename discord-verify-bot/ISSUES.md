@@ -48,7 +48,7 @@ Add `panel_message_id` and `panel_channel_id` columns to the `guild_settings` ta
 Save them via `settingsRepo` in `cmd_setupModPanel`.  
 Load them back into in-memory config in the `clientReady` boot loop (same place verif settings are loaded).
 
-**Status:** [ ] Pending
+**Status:** [x] Fixed
 
 ---
 

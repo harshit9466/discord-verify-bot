@@ -88,6 +88,7 @@ async function initDb() {
     await client.query(`
       ALTER TABLE members             ADD COLUMN IF NOT EXISTS reminder_sent_at        TIMESTAMPTZ;
       ALTER TABLE guild_settings      ADD COLUMN IF NOT EXISTS config_overrides        JSONB NOT NULL DEFAULT '{}';
+      ALTER TABLE guild_settings      ADD COLUMN IF NOT EXISTS panel                   JSONB NOT NULL DEFAULT '{}';
       ALTER TABLE verification_states ADD COLUMN IF NOT EXISTS edit_category_queue     JSONB;
       ALTER TABLE verification_states ADD COLUMN IF NOT EXISTS previous_selected_roles JSONB;
     `);

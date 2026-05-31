@@ -84,9 +84,10 @@ client.once('clientReady', async () => {
   // so the scheduled job always has up-to-date settings after a redeploy
   for (const guildId of getAllConfiguredGuilds()) {
     try {
-      const [dbSettings, configOverrides] = await Promise.all([
+      const [dbSettings, configOverrides, panelConfig] = await Promise.all([
         settingsRepo.getVerifSettings(guildId),
         settingsRepo.getConfigOverrides(guildId),
+        settingsRepo.getPanelConfig(guildId),
       ]);
       const config = getGuildConfig(guildId);
       if (config && dbSettings) {
@@ -96,6 +97,11 @@ client.once('clientReady', async () => {
       if (configOverrides && Object.keys(configOverrides).length > 0) {
         applyConfigOverrides(guildId, configOverrides);
         logger.info(`Loaded config overrides for guild ${guildId}`);
+      }
+      if (config && panelConfig?.panelMessageId) {
+        config.panelMessageId = panelConfig.panelMessageId;
+        config.panelChannelId = panelConfig.panelChannelId;
+        logger.info(`Loaded persisted panel config for guild ${guildId}`);
       }
     } catch (err) {
       logger.warn(`Could not load DB settings for guild ${guildId}: ${err.message}`);
