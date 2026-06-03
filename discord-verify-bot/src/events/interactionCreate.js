@@ -5,7 +5,7 @@
 const { MessageFlags, PermissionFlagsBits } = require('discord.js');
 const logger = require('../utils/logger');
 const { getGuildConfig, saveGuildConfig, applyConfigOverrides } = require('../config/configManager');
-const { getState, initState, updateState, clearState, STEPS } = require('../utils/stateManager');
+const { getState, initState, updateState, markApproved, markRejected, markLeft, STEPS } = require('../utils/stateManager');
 const embeds      = require('../utils/embeds');
 const components  = require('../utils/components');
 const memberRepo  = require('../db/memberRepository');
@@ -728,7 +728,7 @@ async function mod_approve(interaction, guildId, userId, config) {
       notes:       `Approved by ${interaction.user.tag}`,
     }).catch(() => {});
 
-    await clearState(guildId, userId);
+    await markApproved(guildId, userId);
     logger.info(member.user.tag + ' approved by ' + interaction.user.tag + ' in ' + guild.name);
 
   } catch (err) {
@@ -791,7 +791,7 @@ async function mod_rejectReason(interaction, parts) {
       notes:       `Reason: ${reason}`,
     }).catch(() => {});
 
-    await clearState(guildId, userId);
+    await markRejected(guildId, userId);
     logger.info(member.user.tag + ' rejected by ' + interaction.user.tag);
 
   } catch (err) {
@@ -1362,7 +1362,6 @@ async function cmd_verifyMe(interaction) {
     return interaction.reply({ content: 'Server config not found.', flags: MessageFlags.Ephemeral });
   }
 
-  await clearState(guildId, userId);
   await initState(guildId, userId);
   await updateState(guildId, userId, { step: STEPS.RULES });
 

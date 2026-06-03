@@ -1,7 +1,5 @@
 const { pool } = require('./connection');
 
-const TIMEOUT_MINUTES = 60;
-
 const FIELD_MAP = {
   step:                { col: 'step',                 jsonb: false },
   rulesAgreed:         { col: 'rules_agreed',          jsonb: false },
@@ -32,30 +30,30 @@ function rowToState(row) {
   };
 }
 
+async function setStatus(guildId, userId, status) {
+  await pool.query(
+    `UPDATE verification_states SET status = $3, last_activity_at = NOW()
+     WHERE guild_id = $1 AND user_id = $2 AND status = 'ACTIVE'`,
+    [guildId, userId, status],
+  );
+}
+
 async function getState(guildId, userId) {
   const { rows } = await pool.query(
-    'SELECT * FROM verification_states WHERE guild_id = $1 AND user_id = $2',
+    `SELECT * FROM verification_states
+     WHERE guild_id = $1 AND user_id = $2 AND status = 'ACTIVE'`,
     [guildId, userId],
   );
   if (!rows[0]) return null;
-
-  const ageMinutes = (Date.now() - new Date(rows[0].last_activity_at).getTime()) / 60000;
-  if (ageMinutes > TIMEOUT_MINUTES) {
-    await pool.query(
-      'DELETE FROM verification_states WHERE guild_id = $1 AND user_id = $2',
-      [guildId, userId],
-    );
-    return null;
-  }
-
   return rowToState(rows[0]);
 }
 
 async function initState(guildId, userId) {
   const { rows } = await pool.query(`
-    INSERT INTO verification_states (guild_id, user_id)
-    VALUES ($1, $2)
+    INSERT INTO verification_states (guild_id, user_id, status)
+    VALUES ($1, $2, 'ACTIVE')
     ON CONFLICT (guild_id, user_id) DO UPDATE SET
+      status             = 'ACTIVE',
       step               = 'NOT_STARTED',
       rules_agreed       = false,
       selected_roles     = '{}',
@@ -91,33 +89,26 @@ async function updateState(guildId, userId, updates) {
   values.push(guildId, userId);
 
   const { rows } = await pool.query(
-    `UPDATE verification_states SET ${setClauses.join(', ')} WHERE guild_id = $${i} AND user_id = $${i + 1} RETURNING *`,
+    `UPDATE verification_states SET ${setClauses.join(', ')}
+     WHERE guild_id = $${i} AND user_id = $${i + 1} AND status = 'ACTIVE'
+     RETURNING *`,
     values,
   );
   return rows[0] ? rowToState(rows[0]) : null;
 }
 
-async function clearState(guildId, userId) {
-  await pool.query(
-    'DELETE FROM verification_states WHERE guild_id = $1 AND user_id = $2',
-    [guildId, userId],
-  );
-}
+async function markApproved(guildId, userId) { return setStatus(guildId, userId, 'APPROVED'); }
+async function markRejected(guildId, userId) { return setStatus(guildId, userId, 'REJECTED'); }
+async function markLeft(guildId, userId)     { return setStatus(guildId, userId, 'LEFT');     }
 
 async function findStateByUserId(userId) {
   const { rows } = await pool.query(
-    'SELECT * FROM verification_states WHERE user_id = $1 ORDER BY last_activity_at DESC LIMIT 1',
+    `SELECT * FROM verification_states
+     WHERE user_id = $1 AND status = 'ACTIVE'
+     ORDER BY last_activity_at DESC LIMIT 1`,
     [userId],
   );
   return rows[0] ? rowToState(rows[0]) : null;
 }
 
-async function cleanupExpired() {
-  const { rowCount } = await pool.query(
-    `DELETE FROM verification_states WHERE last_activity_at < NOW() - ($1 * INTERVAL '1 minute')`,
-    [TIMEOUT_MINUTES],
-  );
-  return rowCount ?? 0;
-}
-
-module.exports = { getState, initState, updateState, clearState, findStateByUserId, cleanupExpired };
+module.exports = { getState, initState, updateState, markApproved, markRejected, markLeft, findStateByUserId };

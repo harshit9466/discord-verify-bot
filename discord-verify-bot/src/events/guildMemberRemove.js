@@ -9,7 +9,7 @@
 
 const logger      = require('../utils/logger');
 const { getGuildConfig } = require('../config/configManager');
-const { clearState, getState } = require('../utils/stateManager');
+const { markLeft, getState } = require('../utils/stateManager');
 const memberRepo  = require('../db/memberRepository');
 const eventRepo   = require('../db/eventRepository');
 
@@ -23,8 +23,8 @@ module.exports = {
     // In-progress verification state clean up
     const existingState = await getState(guild.id, user.id);
     if (existingState) {
-      logger.info(`Clearing incomplete verification state for ${user.tag} (they left mid-flow)`);
-      await clearState(guild.id, user.id);
+      logger.info(`Marking incomplete verification state as LEFT for ${user.tag} (they left mid-flow)`);
+      await markLeft(guild.id, user.id);
     }
 
     const config = getGuildConfig(guild.id);
