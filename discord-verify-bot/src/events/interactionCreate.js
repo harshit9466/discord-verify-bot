@@ -732,6 +732,16 @@ async function mod_approve(interaction, guildId, userId, config) {
     logger.info(member.user.tag + ' approved by ' + interaction.user.tag + ' in ' + guild.name);
 
   } catch (err) {
+    // 10007 = Unknown Member (left the guild before mod reviewed)
+    if (err.code === 10007 || err.code === 10013) {
+      await interaction.message.delete().catch(() => {});
+      memberRepo.updateMemberStatus(userId, guildId, 'LEFT_UNVERIFIED').catch(() => {});
+      markLeft(guildId, userId).catch(() => {});
+      return interaction.followUp({
+        content: '⚠️ This member has left the server. Their verification request has been removed from the queue.',
+        flags: MessageFlags.Ephemeral,
+      }).catch(() => {});
+    }
     logger.error('Failed to approve member ' + userId + ':', { error: err.message });
     await interaction.followUp({ content: 'Approval failed: ' + err.message, flags: MessageFlags.Ephemeral }).catch(() => {});
   }
@@ -795,6 +805,16 @@ async function mod_rejectReason(interaction, parts) {
     logger.info(member.user.tag + ' rejected by ' + interaction.user.tag);
 
   } catch (err) {
+    // 10007 = Unknown Member (left the guild before mod reviewed)
+    if (err.code === 10007 || err.code === 10013) {
+      await interaction.message.delete().catch(() => {});
+      memberRepo.updateMemberStatus(userId, guildId, 'LEFT_UNVERIFIED').catch(() => {});
+      markLeft(guildId, userId).catch(() => {});
+      return interaction.followUp({
+        content: '⚠️ This member has left the server. Their verification request has been removed from the queue.',
+        flags: MessageFlags.Ephemeral,
+      }).catch(() => {});
+    }
     logger.error('Failed to reject member ' + userId + ':', { error: err.message });
     await interaction.followUp({ content: 'Rejection failed: ' + err.message, flags: MessageFlags.Ephemeral }).catch(() => {});
   }
