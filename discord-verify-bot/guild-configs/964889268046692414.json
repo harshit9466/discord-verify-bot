@@ -49,15 +49,10 @@
       "minSelect":   1,
       "maxSelect":   1,
       "roles": [
-        { "id": "964937792637522020", "label": "Sissy",        "emoji": "🎀" },
-        { "id": "964940035151499365", "label": "Trans Femme",  "emoji": "🌸" },
-        { "id": "998243291420184627", "label": "Trans Masc",   "emoji": "💙" },
-        { "id": "964940114780373044", "label": "Non-Binary",   "emoji": "💛" },
-        { "id": "964939954851573760", "label": "Woman",        "emoji": "💜" },
-        { "id": "964939855211667456", "label": "Man",          "emoji": "🔵" },
-        { "id": "985903711069024256", "label": "Genderfluid",  "emoji": "🌊" },
-        { "id": "985902819309666354", "label": "Agender",      "emoji": "⚪" },
-        { "id": "1007281411851571300","label": "Femboy",       "emoji": "🌺" }
+        { "id": "964937792637522020", "label": "Femme",        "emoji": "🌸" },
+        { "id": "964939855211667456", "label": "Masc",         "emoji": "💙" },
+        { "id": "985903711069024256", "label": "Fluid",        "emoji": "🌊" },
+        { "id": "985902819309666354", "label": "Androgynous",  "emoji": "✨" }
       ]
     },
     {
@@ -87,30 +82,6 @@
       ]
     },
     {
-      "name":        "Position",
-      "description": "Select your position preference (pick all that apply)",
-      "minSelect":   1,
-      "maxSelect":   4,
-      "roles": [
-        { "id": "964940160410193921",  "label": "Top",    "emoji": "⬆️" },
-        { "id": "964940222074871808",  "label": "Bottom", "emoji": "⬇️" },
-        { "id": "964940256120017038",  "label": "Vers",   "emoji": "↕️" },
-        { "id": "1001836221053550612", "label": "None",   "emoji": "➖" }
-      ]
-    },
-    {
-      "name":        "BDSM",
-      "description": "Select your BDSM identity (pick one)",
-      "minSelect":   1,
-      "maxSelect":   1,
-      "roles": [
-        { "id": "964940398701187122", "label": "Sub",     "emoji": "🔗" },
-        { "id": "964940467592642580", "label": "Switch",  "emoji": "🔄" },
-        { "id": "964940358142267403", "label": "Dom/me",  "emoji": "👑" },
-        { "id": "964940510697496637", "label": "Vanilla", "emoji": "🍦" }
-      ]
-    },
-    {
       "name":        "Relationship Status",
       "description": "Select your relationship status (pick all that apply)",
       "minSelect":   1,
@@ -126,55 +97,28 @@
       ]
     },
     {
-      "name":        "DM Preference",
-      "description": "How open are you to DMs? (pick one)",
-      "minSelect":   1,
-      "maxSelect":   1,
-      "roles": [
-        { "id": "965122716887826453",  "label": "Closed DMs",       "emoji": "🔒" },
-        { "id": "1001513519432351845", "label": "Open DMs",         "emoji": "📬" },
-        { "id": "965123568528666676",  "label": "Ask First",        "emoji": "🙋" },
-        { "id": "1001827947700822066", "label": "Open for Dom/mes", "emoji": "👑" },
-        { "id": "1001827965186883614", "label": "Open for Subs",    "emoji": "🔗" }
-      ]
-    },
-    {
-      "name":        "Friend Requests",
-      "description": "Your friend request preference (pick one)",
-      "minSelect":   1,
-      "maxSelect":   1,
-      "roles": [
-        { "id": "992700786893140000", "label": "Ask First",               "emoji": "🙋" },
-        { "id": "996049833821483158", "label": "Closed Friend Requests",  "emoji": "🔒" },
-        { "id": "996049991934156962", "label": "Open Friend Requests",    "emoji": "🤝" }
-      ]
-    },
-    {
       "name":        "Sexually Interested In",
       "description": "Who are you interested in? (pick all that apply)",
       "minSelect":   1,
-      "maxSelect":   5,
+      "maxSelect":   4,
       "roles": [
-        { "id": "998930182624772097", "label": "Into Trans Femme",       "emoji": "💜" },
-        { "id": "998944930477133854", "label": "Into Trans Masc",        "emoji": "💙" },
-        { "id": "980038700161441822", "label": "Into Men",               "emoji": "♂️" },
-        { "id": "980038951484133417", "label": "Into Non-Binary People", "emoji": "🏳️" },
-        { "id": "980039199866621952", "label": "Into Women",             "emoji": "♀️" }
+        { "id": "980038848052609064", "label": "Into Fem",          "emoji": "🌸" },
+        { "id": "980038700161441822", "label": "Into Masc",         "emoji": "💙" },
+        { "id": "980038951484133417", "label": "Into Fluid",        "emoji": "🌊" },
+        { "id": "998944930477133854", "label": "Into Androgynous",  "emoji": "✨" }
       ]
     },
     {
       "name":        "Looking For",
       "description": "What are you looking for here? (pick all that apply)",
       "minSelect":   1,
-      "maxSelect":   7,
+      "maxSelect":   5,
       "roles": [
-        { "id": "998945475900215377",  "label": "LF: Dom",        "emoji": "👑" },
-        { "id": "1001848765306642433", "label": "Not Looking",    "emoji": "🚫" },
-        { "id": "998944925041295401",  "label": "LF: Sub",        "emoji": "🔗" },
-        { "id": "998945470812532746",  "label": "LF: Roleplay",   "emoji": "🎭" },
         { "id": "998945403561050253",  "label": "LF: Friends",    "emoji": "🤝" },
-        { "id": "1001834612462469242", "label": "Long Term",      "emoji": "💍" },
-        { "id": "1001834690715590687", "label": "Short Term",     "emoji": "⚡" }
+        { "id": "1001834690715590687", "label": "LF: Short term", "emoji": "⚡" },
+        { "id": "1001834612462469242", "label": "LF: Long term",  "emoji": "💍" },
+        { "id": "998945470812532746",  "label": "LF: Play",       "emoji": "🎭" },
+        { "id": "1001848765306642433", "label": "LF: Nothing",    "emoji": "🚫" }
       ]
     }
   ],
