@@ -414,6 +414,10 @@ function buildModPanelComponents(guildId) {
       .setCustomId(`verif:panel:cleanupleft:${guildId}`)
       .setLabel('🧹 Cleanup Left Members')
       .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId(`verif:panel:fix-desync:${guildId}`)
+      .setLabel('🔧 Fix Desynced Verified')
+      .setStyle(ButtonStyle.Secondary),
   );
 
   const row3 = new ActionRowBuilder().addComponents(

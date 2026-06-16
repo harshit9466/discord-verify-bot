@@ -156,6 +156,17 @@ client.once('clientReady', async () => {
             if (!member) continue;
             // Skip members who have already submitted intro (they have @Verification Pending)
             if (pendingRoleId && member.roles.cache.has(pendingRoleId)) continue;
+            // Self-heal: member already has a verified content role but DB status is out of sync
+            const contentRoleIds = [
+              config.roles?.travelerRoleId,
+              config.roles?.initiateRoleId,
+              config.roles?.nsfwOnlyRoleId,
+            ].filter(Boolean);
+            if (contentRoleIds.some(id => member.roles.cache.has(id))) {
+              await memberRepo.updateMemberStatus(row.discord_user_id, guildId, 'VERIFIED').catch(() => {});
+              logger.info(`Self-healed desynced member ${row.discord_user_id} in ${guildId}`);
+              continue;
+            }
             await member.user.send({
               embeds: [embeds.buildReminderDMEmbed(guild.name, vs.autoKickEnabled, vs.autoKickHours)],
             }).catch(() => {});

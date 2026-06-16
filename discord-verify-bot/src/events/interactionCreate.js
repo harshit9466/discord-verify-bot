@@ -714,9 +714,9 @@ async function mod_approve(interaction, guildId, userId, config) {
       })().catch(err => logger.error('Log channel IIFE crashed: ' + err.message)),
     ]);
 
-    // Fire-and-forget DB ops — don't block the interaction response
+    // Interaction is already deferred — safe to await DB save here
     const roleAssigned = pref === 'NSFW_ONLY' ? 'NSFW_ONLY' : pref === 'NSFW' ? 'INITIATE' : 'TRAVELER';
-    memberRepo.saveMemberOnVerify(userId, guildId, {
+    await memberRepo.saveMemberOnVerify(userId, guildId, {
       contentPreference: pref,
       roleAssigned,
       selectedRoles: state?.selectedRoles,
@@ -918,6 +918,7 @@ async function panel_action(interaction, parts) {
   else if (sub === 'members')       await panel_showMembers(interaction, guildId);
   else if (sub === 'notifyall')     await panel_notifyAllUnverified(interaction, guildId);
   else if (sub === 'cleanupleft')   await cmd_cleanupLeft(interaction, guildId);
+  else if (sub === 'fix-desync')    await panel_fixDesync(interaction, guildId);
 }
 
 async function panel_refresh(interaction, guildId) {
@@ -1371,6 +1372,61 @@ async function cmd_cleanupLeft(interaction, guildId) {
       `Refresh the panel to see the updated count.`,
     ].join('\n'),
   });
+}
+
+async function panel_fixDesync(interaction, guildId) {
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  try {
+    const config = getGuildConfig(guildId);
+    const contentRoleIds = [
+      config?.roles?.travelerRoleId,
+      config?.roles?.initiateRoleId,
+      config?.roles?.nsfwOnlyRoleId,
+    ].filter(Boolean);
+
+    if (contentRoleIds.length === 0) {
+      return interaction.editReply({ content: '❌ No verified content roles configured for this server.' });
+    }
+
+    const rows  = await memberRepo.getUnverifiedMembers(guildId);
+    const guild = interaction.guild ?? interaction.client.guilds.cache.get(guildId);
+
+    let fixed = 0, checked = 0, skipped = 0;
+
+    for (const row of rows) {
+      try {
+        const discordMember = guild.members.cache.get(row.discord_user_id)
+          ?? await guild.members.fetch(row.discord_user_id).catch(() => null);
+        if (!discordMember) { skipped++; continue; }
+        checked++;
+
+        if (contentRoleIds.some(id => discordMember.roles.cache.has(id))) {
+          await memberRepo.updateMemberStatus(row.discord_user_id, guildId, 'VERIFIED');
+          fixed++;
+        }
+      } catch {
+        skipped++;
+      }
+    }
+
+    logger.info(`Fix-desync by ${interaction.user.tag} in ${guildId}: fixed=${fixed} checked=${checked} skipped=${skipped}`);
+    await interaction.editReply({
+      content: [
+        `🔧 **Desync Fix Complete**`,
+        ``,
+        `📋 Checked **${checked}** DB-unverified members in server`,
+        `✅ **${fixed}** already had verified Discord roles — DB corrected to VERIFIED`,
+        `⏭️ **${skipped}** not found in server (run Cleanup Left for those)`,
+        ``,
+        fixed > 0
+          ? `These members will no longer receive verification reminders.`
+          : `No desynced members found — DB is already in sync!`,
+      ].join('\n'),
+    });
+  } catch (err) {
+    logger.error('Panel fix-desync failed:', { error: err.message });
+    await interaction.editReply({ content: 'Failed to run desync fix.' });
+  }
 }
 
 async function cmd_verifyMe(interaction) {
