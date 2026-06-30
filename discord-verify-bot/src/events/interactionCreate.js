@@ -635,14 +635,14 @@ async function mod_approve(interaction, guildId, userId, config) {
     let roleId, roleName;
     if (pref === 'NSFW_ONLY') {
       roleId = config.roles.nsfwOnlyRoleId;
-      roleName = 'NSFW Only';
     } else if (pref === 'NSFW') {
       roleId = config.roles.initiateRoleId;
-      roleName = 'Initiate';
     } else {
       roleId = config.roles.travelerRoleId;
-      roleName = 'Traveler';
     }
+
+    const resolvedRole = roleId ? guild.roles.cache.get(roleId) : null;
+    roleName = resolvedRole?.name ?? 'Verified';
 
     // Compute final role set in memory — single roles.set() replaces 8-15 sequential add/remove calls
     const toRemoveIds = new Set([
