@@ -14,9 +14,9 @@
   "roles": {
     "unverifiedRoleId": "1521565938518855851",
     "verificationPendingRoleId": "1521565945401970869",
-    "travelerRoleId": "1521565952699793498",
+    "travelerRoleId":            "1521565958882459910",
     "initiateRoleId": "1521565958882459910",
-    "nsfwOnlyRoleId": "1521565966218301625",
+    "nsfwOnlyRoleId":            "1521565958882459910",
     "jailedRoleId": "1521565974321434807",
     "baseRoleId": "1521565981472981122",
     "modsRoleId": "1507753545984770089"
