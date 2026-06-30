@@ -1,0 +1,224 @@
+{
+  "guildId": "1505955945312948336",
+  "guildName": "Powerpuff Girls",
+  "channels": {
+    "welcomeChannelId": "1521558684675866795",
+    "verifyChannelId": "1521558684675866795",
+    "modQueueChannelId": "1521559723164565735",
+    "logChannelId": "1521560470568304751",
+    "accountClaimChannelId": null,
+    "introChannelId": "1521021815005384724",
+    "verifiedLogChannelId": "1521560610972635197",
+    "rejectedLogChannelId": "1521560720775446559"
+  },
+  "roles": {
+    "unverifiedRoleId": "1521565938518855851",
+    "verificationPendingRoleId": "1521565945401970869",
+    "travelerRoleId": "1521565952699793498",
+    "initiateRoleId": "1521565958882459910",
+    "nsfwOnlyRoleId": "1521565966218301625",
+    "jailedRoleId": "1521565974321434807",
+    "baseRoleId": "1521565981472981122",
+    "modsRoleId": "1507753545984770089"
+  },
+  "settings": {
+    "nsfwEnabled": true,
+    "verificationTimeoutHours": 24,
+    "introMinLength": 30,
+    "introMaxLength": 500,
+    "requireRoleSelection": true,
+    "verificationMode": "channel"
+  },
+  "verificationSettings": {
+    "reminderEnabled": false,
+    "reminderHours": 12,
+    "autoKickEnabled": false,
+    "autoKickHours": 24,
+    "kickInviteEnabled": false,
+    "kickInviteLink": ""
+  },
+  "roleCategories": [
+    {
+      "name": "Gender",
+      "description": "Select your gender identity (pick one)",
+      "minSelect": 1,
+      "maxSelect": 1,
+      "roles": [
+        {
+          "id": "1511437802976575749",
+          "label": "Sissy",
+          "emoji": "🎀"
+        },
+        {
+          "id": "1512393101208060017",
+          "label": "Trans Girl",
+          "emoji": "🌸"
+        },
+        {
+          "id": "1514963977581498589",
+          "label": "Femboy",
+          "emoji": "🌺"
+        },
+        {
+          "id": "1515467826716999791",
+          "label": "Enby",
+          "emoji": "💛"
+        },
+        {
+          "id": "1521566003073646752",
+          "label": "Fluid",
+          "emoji": "🌊"
+        },
+        {
+          "id": "1521566010761810050",
+          "label": "Androgynous",
+          "emoji": "✨"
+        }
+      ]
+    },
+    {
+      "name": "Age Range",
+      "description": "Select your age range (pick one)",
+      "minSelect": 1,
+      "maxSelect": 1,
+      "roles": [
+        {
+          "id": "1521566051119271986",
+          "label": "18–22",
+          "emoji": "🌱"
+        },
+        {
+          "id": "1521566063488270427",
+          "label": "23–27",
+          "emoji": "🌿"
+        },
+        {
+          "id": "1521566070635237447",
+          "label": "28–32",
+          "emoji": "🌳"
+        },
+        {
+          "id": "1521566081628504184",
+          "label": "33–37",
+          "emoji": "🍀"
+        },
+        {
+          "id": "1521566090415571005",
+          "label": "38–45",
+          "emoji": "🍃"
+        },
+        {
+          "id": "1521566099324538912",
+          "label": "45+",
+          "emoji": "🌲"
+        }
+      ]
+    },
+    {
+      "name": "Relationship Status",
+      "description": "Select your relationship status (pick all that apply)",
+      "minSelect": 1,
+      "maxSelect": 7,
+      "roles": [
+        {
+          "id": "1521566107805155339",
+          "label": "Taken",
+          "emoji": "💍"
+        },
+        {
+          "id": "1521566133990199497",
+          "label": "Open Relationship",
+          "emoji": "💞"
+        },
+        {
+          "id": "1521566141397471285",
+          "label": "Long Distance",
+          "emoji": "✈️"
+        },
+        {
+          "id": "1521566149136089148",
+          "label": "E-Dating",
+          "emoji": "💻"
+        },
+        {
+          "id": "1521566156169805954",
+          "label": "Polyamorous",
+          "emoji": "🌈"
+        },
+        {
+          "id": "1521566162977161458",
+          "label": "Single – Not Looking",
+          "emoji": "🚫"
+        },
+        {
+          "id": "1521566169700630668",
+          "label": "Ready to Mingle",
+          "emoji": "💘"
+        }
+      ]
+    },
+    {
+      "name": "Sexually Interested In",
+      "description": "Who are you interested in? (pick all that apply)",
+      "minSelect": 1,
+      "maxSelect": 3,
+      "roles": [
+        {
+          "id": "1521566177019559986",
+          "label": "Into Fem",
+          "emoji": "🌸"
+        },
+        {
+          "id": "1521566190168702997",
+          "label": "Into Fluid",
+          "emoji": "🌊"
+        },
+        {
+          "id": "1521566197248692397",
+          "label": "Into Androgynous",
+          "emoji": "✨"
+        }
+      ]
+    },
+    {
+      "name": "Looking For",
+      "description": "What are you looking for here? (pick all that apply)",
+      "minSelect": 1,
+      "maxSelect": 5,
+      "roles": [
+        {
+          "id": "1521566203343016007",
+          "label": "LF: Friends",
+          "emoji": "🤝"
+        },
+        {
+          "id": "1521566210255228929",
+          "label": "LF: Short term",
+          "emoji": "⚡"
+        },
+        {
+          "id": "1521566217125498931",
+          "label": "LF: Long term",
+          "emoji": "💍"
+        },
+        {
+          "id": "1521566224671183039",
+          "label": "LF: Play",
+          "emoji": "🎭"
+        },
+        {
+          "id": "1521566231532929096",
+          "label": "LF: Nothing",
+          "emoji": "🚫"
+        }
+      ]
+    }
+  ],
+  "messages": {
+    "welcomeTitle": "Welcome! 👋 Let's get you verified",
+    "welcomeDescription": "Hey! Before you can access the server, complete a quick **2-minute verification**.\n\nThis keeps our community safe and lets us personalise your experience.\n\nClick below to begin! 🔐",
+    "rulesTitle": "📜 Server Rules",
+    "rulesText": "1. Be respectful to all members\n2. No harassment or hate speech of any kind\n3. Follow Discord's Terms of Service — you must be **18+** to access this server\n4. No spamming or unsolicited DMs\n5. Keep content in appropriate channels\n6. Respect everyone's boundaries — consent is everything\n7. No sharing of anyone's personal information without consent\n\nBy clicking **I Agree**, you confirm you are **18 or older** and will follow these rules.",
+    "dmFailedMessage": "Hey {username}! Please enable DMs from server members so I can guide you through verification, then check <#{welcomeChannelId}> to get started!"
+  }
+}
