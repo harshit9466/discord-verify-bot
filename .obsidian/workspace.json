@@ -4,21 +4,17 @@
     "type": "split",
     "children": [
       {
-        "id": "6ba6789f0d423b61",
+        "id": "79901b6526270af8",
         "type": "tabs",
         "children": [
           {
-            "id": "44c0a936c7eae4f0",
+            "id": "c59e2aa8c7e1d0a7",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "Discord-Verification-Overhaul-Plan.md",
-                "mode": "source",
-                "source": false
-              },
+              "type": "empty",
+              "state": {},
               "icon": "lucide-file",
-              "title": "Discord-Verification-Overhaul-Plan"
+              "title": "New tab"
             }
           }
         ]
@@ -78,8 +74,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "right": {
     "id": "34198b00439a0e87",
@@ -184,8 +179,10 @@
       "bases:Create new base": false
     }
   },
-  "active": "44c0a936c7eae4f0",
+  "active": "c59e2aa8c7e1d0a7",
   "lastOpenFiles": [
+    "discord-verify-bot/incidents/INC-001-verification-state-expiry.md",
+    "Discord-Verification-Overhaul-Plan.md",
     "discord-verify-bot/node_modules/@discordjs/rest/node_modules/@sapphire/snowflake/dist/cjs/index.d.cts",
     "discord-verify-bot/node_modules/@discordjs/rest/node_modules/@sapphire/snowflake/dist/iife/index.global.js.map",
     "discord-verify-bot/node_modules/@discordjs/rest/node_modules/@sapphire/snowflake/dist/esm/index.mjs",
@@ -196,7 +193,6 @@
     "discord-verify-bot/node_modules/@discordjs/rest/node_modules/@sapphire/snowflake/dist/esm/index.d.mts",
     "discord-verify-bot/node_modules/@discordjs/rest/node_modules/@sapphire/snowflake/dist/iife",
     "discord-verify-bot/node_modules/@discordjs/rest/node_modules/@sapphire/snowflake/dist/esm",
-    "discord-verify-bot/node_modules/@discordjs/rest/node_modules/@sapphire/snowflake/dist/cjs",
     "discord-verify-bot/node_modules/@discordjs/ws/node_modules/@types/ws/README.md",
     "discord-verify-bot/node_modules/@discordjs/ws/node_modules/ws/README.md",
     "discord-verify-bot/node_modules/@discordjs/ws/node_modules/@sapphire/async-queue/README.md",
@@ -220,7 +216,6 @@
     "discord-verify-bot/node_modules/undici/docs/docs/api/Fetch.md",
     "discord-verify-bot/node_modules/undici/docs/docs/api/MockErrors.md",
     "discord-verify-bot/node_modules/undici/docs/docs/api/MockClient.md",
-    "discord-verify-bot/node_modules/undici/docs/docs/api/EventSource.md",
-    "discord-verify-bot/node_modules/undici/docs/docs/api/Debug.md"
+    "discord-verify-bot/node_modules/undici/docs/docs/api/EventSource.md"
   ]
 }

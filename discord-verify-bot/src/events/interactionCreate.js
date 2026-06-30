@@ -825,6 +825,14 @@ async function mod_rejectReason(interaction, parts) {
 // ============================================================
 
 async function showContentPreference(interaction, guildId, userId, config) {
+  if (config.settings.skipContentPreference) {
+    await updateState(guildId, userId, { step: STEPS.INTRO, contentPreference: 'NSFW' });
+    return interaction.update({
+      embeds:     [embeds.buildIntroPromptEmbed()],
+      components: [components.buildOpenIntroButton(guildId, userId)],
+    });
+  }
+
   await updateState(guildId, userId, { step: STEPS.CONTENT });
   await interaction.update({
     embeds:     [embeds.buildContentPrefEmbed(config)],

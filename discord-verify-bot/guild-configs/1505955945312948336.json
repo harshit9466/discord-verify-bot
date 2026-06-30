@@ -27,7 +27,8 @@
     "introMinLength": 30,
     "introMaxLength": 500,
     "requireRoleSelection": true,
-    "verificationMode": "channel"
+    "skipContentPreference":    true,
+    "verificationMode":         "channel"
   },
   "verificationSettings": {
     "reminderEnabled": false,

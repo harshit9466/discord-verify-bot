@@ -3,7 +3,15 @@
     "allow": [
       "Bash(node setup-nsfw-permissions.js)",
       "Bash(npx gitnexus *)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(node src/deploy-commands.js)",
+      "Bash(node --check src/deploy-commands.js)",
+      "Bash(node --check src/index.js)",
+      "Bash(node --check src/events/interactionCreate.js)",
+      "Bash(node --check src/utils/components.js)",
+      "Bash(node --check src/config/configManager.js)",
+      "Bash(node --check src/db/settingsRepository.js)",
+      "mcp__gitnexus__impact"
     ]
   }
 }

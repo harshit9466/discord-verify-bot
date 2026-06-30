@@ -1,327 +1,274 @@
 # Discord Server Verification Overhaul — Complete Plan
 **Server ID:** 964889268046692414  
-**Date:** 2026-05-25  
+**Last Updated:** 2026-05-29  
 **Goal:** Reduce joining friction, automate mod workload, track member lifecycle, support SFW/NSFW preference, and handle account switches gracefully.
 
 ---
 
-## Problem Summary
+## Implementation Status
 
-Current flow requires members to:
-1. Manually go to #rules and click a check mark
-2. Manually go to #roles and pick roles
-3. Write a freeform intro in #introductions
-4. Wait up to 24 hours for a mod to manually verify them
-
-This is high-friction for users and highly manual for mods. There's also no tracking, no returning member detection, and no account switch mechanism.
-
----
-
-## Proposed Solution: Custom Discord Bot
-
-The core of the overhaul is a **dedicated verification bot** built with **discord.js v14** (Node.js). This bot handles every step of the verification pipeline using Discord's native UI components — buttons, select menus, and modals — so the experience feels native and smooth.
-
-Alongside this custom bot, you can keep **Carl-bot or YAGPDB** for general utility (reaction roles for interests, moderation, etc.). The custom bot handles only the verification pipeline.
+| Phase | Feature | Status |
+|-------|---------|--------|
+| Phase 1 | Bot setup + button verification flow | ✅ Done |
+| Phase 2 | Introduction modal + mod queue | ✅ Done |
+| Phase 3 | PostgreSQL + returning member auto-verify | ✅ Done |
+| Phase 4 | Account switch system | ⏳ Backlog |
+| Phase 5 | Mod panel + notifications + reminder/auto-kick | ✅ Done |
+| Phase 6 | Admin config via Discord | 🔲 Planned |
+| Phase 7 | Member self-service (role update + intro edit) | 🔲 Planned |
+| Phase 8 | Enhanced mod tools (lookup, notes, weekly summary) | 🔲 Planned |
+| Phase 9 | Analytics enhancement (time range, rejection reasons) | 🔲 Planned |
 
 ---
 
-## Flow 1: New Member Verification (Redesigned)
+## What's Live (as of 2026-05-29)
 
-### What Changes
-- No more visiting #rules, #roles, and #introductions separately
-- Everything happens in a single guided DM/channel flow
-- Intro is a structured form (modal), not a freeform message
-- Mods get a formatted card with one-click Approve/Reject instead of reading a paragraph
+### Verification Flow
+- New member joins → `@Unverified` role
+- Persistent "Start Verification" button in verify channel
+- Step 1: Rules agreement
+- Step 2: Role selection (10 categories via dropdowns)
+- Step 3: Content preference (SFW / SFW+NSFW / NSFW Only)
+- Step 4: Introduction modal (name, age, location, how found, about you)
+- Optional: Kinks & hard limits modal (skippable)
+- Submit → `@Verification Pending` role + mod queue entry
 
-### Step-by-Step Flow
+### Mod Queue
+- Formatted embed per submission (profile, roles, intro)
+- Approve → verified role assigned, `@Unverified` removed, DM sent, public intro posted, deleted from queue
+- Reject → reason modal, DM with reason, deleted from queue
+- Subscribed mods pinged on new entry
 
-**Step 0 — Join Event**  
-Member joins → Bot instantly assigns `@Unverified` role. This role has zero channel access except #welcome and #account-claim.
+### Logs
+- `#verified-logs` — green embed per approved member
+- `#rejected-logs` — red embed per rejected member
+- `#verification-log` — general activity log
 
-**Step 1 — Welcome + Start**  
-Bot sends a DM (or posts in #welcome) with a branded embed:
-- Server intro, what to expect
-- Single button: **[Begin Verification →]**
+### Returning Members
+- Auto-verify on rejoin if previously VERIFIED
+- Roles re-assigned from DB, DM sent, no mod action needed
 
-**Step 2 — Rules Agreement**  
-Bot posts rules directly in the DM as an embed. User clicks **[✅ I Agree to the Rules]** button. No navigating to a channel. Agreement is logged with a timestamp in the database.
+### Mod Panel (pinned in `#mod-panel`)
+- Stats grid: Joins / Verified / Rejected / Auto-Verified / Avg Time
+- Queue status: Not Started / Pending Review / Subscribed Mods
+- Auto-refreshes every 1 hour
+- Buttons: Refresh Stats | Notifications | Settings
 
-**Step 3 — Role Selection**  
-Bot posts Discord Select Menus (dropdowns), one per interest category. User must select at least one from each. Bot validates before allowing next step. This replaces manually going to #roles.
+### Settings (via mod panel ⚙️ Settings button)
+- Reminder DM toggle + configurable hours
+- Auto-kick toggle + configurable hours
+- Invite link on kick toggle + configurable link
+- All settings persist in PostgreSQL (survive redeploys)
 
-**Step 4 — Content Preference (SFW/NSFW)**  
-Bot posts a prompt:
-> "Which content would you like access to?"
+### Scheduled Jobs
+- Every 30 min: reminder DMs + auto-kick for overdue unverified members
+- Every 1 hour: mod panel stats auto-refresh
 
-Two buttons:
-- **[🌞 SFW Only]** → Will assign `@Traveller` on verification
-- **[🔞 SFW + NSFW]** → Will assign `@Initiate` on verification
+---
 
-Choice is stored in DB. Not assigned yet — assigned only after mod approval.
+## Database Schema (Current)
 
-**Step 5 — Introduction Modal**  
-Clicking "Next" triggers a native Discord modal popup (no navigating anywhere) with structured fields:
-- **Display Name / What to call you** (required, 2–32 chars)
-- **Age** (required, number — bot validates it's reasonable)
-- **How did you find our server?** (required, 10–200 chars)
-- **Tell us about yourself** (required, 30–500 chars)
+### `members`
+| Column | Type | Notes |
+|--------|------|-------|
+| discord_user_id | VARCHAR(20) | Unique per guild |
+| guild_id | VARCHAR(20) | |
+| username_history | JSONB | Array of past usernames |
+| first_joined_at | TIMESTAMPTZ | |
+| last_joined_at | TIMESTAMPTZ | |
+| last_left_at | TIMESTAMPTZ | |
+| verified_at | TIMESTAMPTZ | |
+| verification_status | VARCHAR(20) | PENDING / AWAITING_MOD / VERIFIED / REJECTED / TIMED_OUT |
+| content_preference | VARCHAR(20) | SFW / NSFW / NSFW_ONLY |
+| role_assigned | VARCHAR(20) | TRAVELER / INITIATE / NSFW_ONLY |
+| selected_roles | JSONB | { categoryIndex: [roleId, ...] } |
+| intro | JSONB | { displayName, age, location, howFound, aboutYou, kinks, hardLimits } |
+| rejoin_count | INTEGER | |
+| notes | TEXT | Mod notes |
+| reminder_sent_at | TIMESTAMPTZ | For reminder job dedup |
 
-This replaces freeform #introductions posts entirely. Structured data = faster mod review.
+### `events`
+| Column | Type | Notes |
+|--------|------|-------|
+| event_type | VARCHAR(30) | JOIN / LEAVE / VERIFIED / REJECTED / KICKED / REJOIN |
+| triggered_by | VARCHAR(20) | Mod Discord ID |
+| notes | TEXT | |
 
-**Step 6 — Mod Review Queue**  
-Bot posts a formatted embed in `#mod-verify-queue` (private, mods only):
+### `mod_subscribers`
+Mods who opted in for ping on new verification submissions.
 
+### `guild_settings`
+| Column | Type | Notes |
+|--------|------|-------|
+| guild_id | VARCHAR(20) | PK |
+| settings | JSONB | verificationSettings (reminder, kick, invite) |
+
+---
+
+## Phase 6 — Admin Config via Discord
+**Goal:** Admin can change welcome message + rules text from Discord without touching JSON files or redeploying.
+
+### New slash command: `/edit-config`
+- Admin only (Administrator permission)
+- Opens a modal with 4 fields (max 5 Discord allows):
+  - Welcome Title
+  - Welcome Description (paragraph)
+  - Rules Title
+  - Rules Text (paragraph)
+- On save → stored in `guild_settings` DB as `configOverrides`
+- Bot startup: loads overrides from DB and applies to in-memory config cache
+
+### DB change
+- `guild_settings` table: add `config_overrides JSONB DEFAULT '{}'` column
+
+### Files to change
+- `src/db/connection.js` — add column migration
+- `src/db/settingsRepository.js` — add getConfigOverrides / saveConfigOverrides
+- `src/config/configManager.js` — apply DB overrides at startup
+- `src/events/interactionCreate.js` — cmd_editConfig + modal_saveConfig
+- `src/deploy-commands.js` — register /edit-config
+- `src/index.js` — load config overrides in ready event
+
+---
+
+## Phase 7 — Member Self-Service
+
+### 7a. Role Update Request (`/update-roles`)
+Verified members can request to change their selected roles without going through full reverification.
+
+**Flow:**
+1. Verified member runs `/update-roles`
+2. Bot shows current role selections pre-filled in dropdowns
+3. Member changes selections and submits
+4. Bot posts to mod queue with cyan "🔄 Role Update Request" embed
+5. Mod approves → old roles removed, new roles assigned, DB updated, DM sent
+6. Mod rejects → DM sent with reason
+
+**State:** Uses existing stateManager with new flow type `ROLE_UPDATE`
+
+### 7b. Introduction Edit (`/edit-intro`)
+Verified members can request to update their public intro post.
+
+**Flow:**
+1. Verified member runs `/edit-intro`
+2. Bot opens intro modal pre-filled with their current DB values
+3. Member edits and submits
+4. Bot posts to mod queue with purple "✏️ Intro Edit Request" embed
+5. Mod approves → DB intro updated, old public intro post deleted + new one posted, DM sent
+6. Mod rejects → DM with reason
+
+**Note:** Requires storing public intro message ID in DB to edit/delete it.
+
+### DB changes
+- `members` table: add `public_intro_message_id VARCHAR(20)` column
+- On verification approve: save message ID after posting to intro channel
+
+### Files to change
+- `src/db/connection.js` — add column
+- `src/db/memberRepository.js` — updateSelectedRoles, updateIntro, savePublicIntroMsgId
+- `src/utils/stateManager.js` — new flow types
+- `src/utils/embeds.js` — role update queue embed, intro edit queue embed, approved DM embeds
+- `src/utils/components.js` — role update queue buttons, intro edit modal
+- `src/events/interactionCreate.js` — cmd handlers + mod queue action handlers
+- `src/deploy-commands.js` — register /update-roles and /edit-intro
+
+---
+
+## Phase 8 — Enhanced Mod Tools
+
+### 8a. Member Lookup (`/lookup @user`)
+Admin/mod command to view a member's full DB record.
+
+**Output embed:**
+- Discord tag + avatar
+- Verification status, role assigned, content preference
+- First joined, last joined, rejoin count, verified date
+- Intro summary (name, age, location)
+- Notes field (mod notes)
+- Recent events (last 5 from events table)
+
+**New slash command:** `/lookup` with required `user` option (User type)
+
+### 8b. Mod Notes
+When approving or rejecting, mods can add an optional note that gets saved to `members.notes`.
+
+**UI change:** Approval flow (after deferUpdate) → ask for optional note via ephemeral followUp button:
+- "📝 Add Note" button → opens modal with note field
+- "Skip" button → proceeds without note
+- Note saved in DB, visible via /lookup
+
+Alternatively: add optional note field directly to reject reason modal.
+
+### 8c. Weekly Summary DM
+Every Sunday at midnight (server timezone), subscribed mods receive a DM:
+- Last 7 days stats
+- Pending review count
+- Members auto-kicked this week
+- Top rejection reason (if any)
+
+**Scheduled job:** In `index.js` ready event, `setInterval` every 24h checks if it's Sunday.
+
+### Files to change
+- `src/db/memberRepository.js` — getMemberForLookup, updateMemberNotes
+- `src/utils/embeds.js` — buildLookupEmbed, buildWeeklySummaryEmbed
+- `src/events/interactionCreate.js` — cmd_lookup, mod notes flow
+- `src/deploy-commands.js` — register /lookup
+- `src/index.js` — weekly summary job
+
+---
+
+## Phase 9 — Analytics Enhancement
+
+### 9a. Time Range Selector on Mod Panel
+Add a StringSelectMenu below the mod panel buttons:
+- Options: Last 7 Days / Last 30 Days / All Time
+- On select → refresh stats with chosen range
+- `getStats(guildId, days)` already supports variable days; `days = 0` = all time
+
+### 9b. Rejection Reasons Breakdown
+New query on `events` table: extract rejection reasons from notes field, group by frequency.
+
+Show in mod panel or via `/rejection-stats` command:
 ```
-📋 New Verification Request
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-👤 Username: example#1234 (ID: 123456789)
-📅 Joined: 2026-05-25 at 14:32 UTC
-🎭 Name: Alex
-🎂 Age: 22
-🔍 Found us via: A friend's recommendation
-📝 About: [their intro text here]
-🏷️ Roles selected: Gaming, Anime, Music
-🔞 Content Preference: SFW + NSFW (will get @Initiate)
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-[✅ Approve]   [❌ Reject]   [🔎 View Profile]
+Top Rejection Reasons (Last 30 Days)
+1. "Intro too short" — 4 times
+2. "Age not provided" — 2 times
+3. "No location given" — 1 time
 ```
 
-**Approve** → Bot assigns the correct role, removes @Unverified, DMs the user with a welcome message.  
-**Reject** → Bot DMs user with the reason (mod types a quick reason in a text input that appears after clicking Reject). User can redo Step 5 only — no full restart.
-
-### Mod Time Saved
-Old flow: Read freeform intro → find #roles to see what they picked → manually assign role in member list → DM user.  
-New flow: One click on Approve/Reject in a pre-formatted card.
-
----
-
-## Flow 2: Returning Member — Auto-Verify
-
-### Problem
-Currently, a member who leaves and rejoins has to go through the full verification again, wasting both their time and mod time.
-
-### Solution
-The bot maintains a database of all verified members indexed by **Discord User ID**. When `guildMemberAdd` fires:
-
-1. Bot looks up the user ID in the `members` table
-2. **If found with `verification_status = VERIFIED`:**
-   - Bot immediately assigns their previous role (Initiate or Traveller)
-   - Removes @Unverified
-   - Sends a personalized "Welcome back, {name}! You've been auto-verified 🎉" DM
-   - Logs the rejoin event in #verification-log for mod visibility
-   - Updates `last_joined_at` and increments `rejoin_count` in DB
-3. **If found but NOT verified (left mid-flow):**
-   - Restarts verification flow
-   - DB context shown to mods so they know this person had a previous attempt
-
-### Key Note on Discord User IDs
-Discord User IDs are permanent and unique even if someone changes their username. So `discord_user_id` is the reliable key for lookup — not username or display name.
+### Files to change
+- `src/db/statsRepository.js` — update getStats for all-time, add getTopRejectionReasons
+- `src/utils/embeds.js` — update buildModPanelEmbed for time range, add buildRejectionStatsEmbed
+- `src/utils/components.js` — time range select menu
+- `src/events/interactionCreate.js` — time range panel handler, rejection stats handler
+- `src/deploy-commands.js` — register /rejection-stats (optional, could be panel-only)
 
 ---
 
-## Flow 3: Account Switch
+## Phase 4 (Backlog) — Account Switch System
 
-### Problem
-A member's old Discord account gets hacked, disabled, or lost. They join on a new account but deserve to skip full verification since they were already a community member.
+Low priority. Full flow:
+1. `/claim-old-account` command opens modal (old username, old user ID, reason)
+2. Bot creates private thread in mod channel with DB history of old account
+3. Mod verifies and approves/denies in thread
+4. Approve: new account gets old role, old account gets `@Jailed`
+5. `account_links` table records the link
 
-### Solution
-
-**Channel:** `#account-claim`  
-This channel is visible to @Unverified users only for the purpose of using one slash command.
-
-**Slash Command:** `/claim-old-account`  
-This opens a modal:
-- **Old account username** (e.g., `example#0001` or just `example`)
-- **Old account User ID** (optional but helps mods; user can get this from Discord's copy ID feature)
-- **Reason for account switch** (text, 20–300 chars)
-
-**Bot Action:**  
-Bot creates a **private thread** in `#mod-support` (or a dedicated `#account-claims-review` channel). The thread includes:
-- The user's claim
-- DB history of the old account (when they joined, verified date, roles, any notes)
-- Two buttons: **[✅ Approve Claim]** and **[❌ Deny Claim]**
-
-**Mod Verification (in thread):**  
-Mods can ask for proof inside the thread. Suggested proof methods:
-- Have the old account send a specific message in a restricted channel (if it still has access)
-- Screenshot of the old account's DM history with the server bot
-- Any other social proof the mods are comfortable with
-
-**If Approved:**  
-- New account → gets the role the old account had (Initiate or Traveller)
-- Old account → gets `@Jailed` role (all channel access removed, can only see `#jailed-accounts` which explains "this account has been locked — contact mods if this is a mistake")
-- DB: `account_links` table records the old → new link
-
-**If Denied:**  
-- New account goes through normal verification flow
-- Thread archived, note added to DB
+**DB:** Add `account_links` table when implementing.
 
 ---
 
-## Database Design
+## Current Config Files
 
-### Table: `members`
-| Column | Type | Notes |
-|---|---|---|
-| id | INTEGER | Primary key, auto-increment |
-| discord_user_id | VARCHAR(20) | Unique, permanent Discord ID |
-| username_history | JSON | Array of past usernames (Discord allows changes) |
-| first_joined_at | TIMESTAMP | Very first join to server |
-| last_joined_at | TIMESTAMP | Most recent join |
-| last_left_at | TIMESTAMP | Most recent leave (null if still in server) |
-| verified_at | TIMESTAMP | When verification was approved |
-| verification_status | ENUM | `PENDING`, `VERIFIED`, `REJECTED`, `JAILED` |
-| content_preference | ENUM | `SFW`, `NSFW`, `BOTH` |
-| role_assigned | ENUM | `INITIATE`, `TRAVELLER`, `NONE` |
-| intro_text | TEXT | Their introduction form submission |
-| rejoin_count | INTEGER | How many times they've left and rejoined |
-| notes | TEXT | Mod notes (freeform) |
-
-### Table: `events`
-| Column | Type | Notes |
-|---|---|---|
-| id | INTEGER | PK |
-| discord_user_id | VARCHAR(20) | FK to members |
-| event_type | ENUM | `JOIN`, `LEAVE`, `VERIFIED`, `REJECTED`, `ACCOUNT_SWITCH`, `JAILED`, `ROLE_CHANGE` |
-| event_at | TIMESTAMP | When it happened |
-| triggered_by | VARCHAR(20) | Mod's Discord ID if mod-triggered |
-| notes | TEXT | Context |
-
-### Table: `account_links`
-| Column | Type | Notes |
-|---|---|---|
-| id | INTEGER | PK |
-| old_discord_user_id | VARCHAR(20) | FK to members |
-| new_discord_user_id | VARCHAR(20) | FK to members |
-| linked_at | TIMESTAMP | When approved |
-| approved_by_mod_id | VARCHAR(20) | Mod who approved |
-| reason | TEXT | User-provided reason |
+**`guild-configs/964889268046692414.json`** — static server config (channels, roles, role categories, messages)  
+**PostgreSQL `guild_settings`** — dynamic settings (verificationSettings, future: config overrides)  
+**Railway environment:** `DISCORD_TOKEN`, `CLIENT_ID`, `DATABASE_URL`
 
 ---
 
-## Role Structure
+## Known Limitations / Tech Debt
 
-| Role | Who Gets It | Access |
-|---|---|---|
-| `@Unverified` | Auto on join | #welcome, #account-claim only |
-| `@Verification-Pending` | After intro submitted | Same as @Unverified + can see a "pending" info channel |
-| `@Traveller` | Verified, SFW preference | All SFW channels |
-| `@Initiate` | Verified, NSFW preference | All SFW + NSFW channels |
-| `@Jailed` | Locked accounts | Only #jailed-accounts (read-only) |
-
----
-
-## Channels Needed
-
-| Channel | Visibility | Purpose |
-|---|---|---|
-| `#welcome` | @Unverified can see | Bot posts welcome embed with Begin Verification button |
-| `#account-claim` | @Unverified can see | Only for /claim-old-account command |
-| `#mod-verify-queue` | Mods only | Bot posts formatted verification cards with Approve/Reject |
-| `#verification-log` | Mods only | Stream of all join/leave/verify/rejoin events |
-| `#jailed-accounts` | @Jailed can see | Explains jailed status to locked accounts |
-
----
-
-## Tech Stack
-
-### Bot Framework
-**discord.js v14** (Node.js)  
-Reason: Best support for Buttons, Select Menus, and Modals (the three UI components this flow depends on). Most maintained, largest community, best documentation.  
-Alternative: discord.py (Python) works too but discord.js v14 has better component support.
-
-### Database
-**SQLite** for smaller servers (under ~10,000 members)  
-→ No external setup, single file, zero cost, good enough.
-
-**PostgreSQL** if you want a proper setup  
-→ More scalable, better for querying, can run on Railway or Supabase free tier.
-
-### Hosting
-**Railway.app** — Recommended  
-- Free $5/month credit (usually enough for a Discord bot)
-- Always-on (doesn't spin down like Render free tier)
-- Simple Node.js deployment with environment variables for bot token
-- Built-in PostgreSQL if you go that route
-
-**Alternatives:** Fly.io (free tier), VPS on DigitalOcean ($4/month), or your own machine if always on.
-
----
-
-## Implementation Phases
-
-### Phase 1 — Bot Setup + Button Verification Flow (Week 1–2)
-- Create bot in Discord Developer Portal, set up discord.js project
-- Welcome embed with Begin Verification button
-- Rules agreement step
-- Role selection via Select Menus
-- Content preference (SFW/NSFW) step
-- Basic in-memory state machine per user (no DB yet)
-
-### Phase 2 — Introduction Modal + Mod Queue (Week 2–3)
-- Introduction modal (Steps 5–6)
-- Mod review queue with formatted cards
-- Approve/Reject buttons with role assignment
-- DM on approval/rejection
-
-### Phase 3 — Database + Returning Member Detection (Week 3–4)
-- Set up SQLite/PostgreSQL
-- Persist all member data on verification
-- Detect returning verified members on `guildMemberAdd`
-- Auto-verify flow + #verification-log logging
-- Track all events in `events` table
-
-### Phase 4 — Account Switch System (Week 4–5)
-- `/claim-old-account` slash command
-- Private thread creation with mods
-- @Jailed role + #jailed-accounts channel
-- `account_links` DB table
-
-### Phase 5 — Polish + Analytics (Ongoing)
-- Timeout handling (user starts verification but doesn't finish — send reminder after 24h)
-- Mod dashboard command: `/stats` — shows verifications this week, avg time-to-verify, rejoin rate
-- Auto-expire pending verifications after 7 days
-
----
-
-## What You Need to Do First
-
-1. **Create a Discord Application** at https://discord.com/developers/applications → New Application → Bot tab → Reset Token (save this)
-2. **Invite the bot** to your server with these permissions: Manage Roles, Send Messages, Create Private Threads, Manage Channels, Read Message History, Use Application Commands
-3. **Decide on hosting** — Railway.app is the easiest path
-4. **Decide on database** — SQLite to start is fine, migrate to Postgres later if needed
-5. **Note your role IDs** for @Unverified, @Initiate, @Traveller (Settings → Roles → right click → Copy ID with Developer Mode on)
-
----
-
-## What You Don't Need to Build
-
-- A web dashboard (Discord's mod queue channel + bot commands are enough)
-- A full intro system in #introductions (you can still have the channel for community reading, but verification happens in DM)
-- Complex analytics (Phase 5 is optional, bot commands are sufficient)
-
----
-
-## Existing Bots You Can Keep
-
-| Bot | Keep Using For | Stop Using For |
-|---|---|---|
-| Carl-bot | Interest/hobby reaction roles in #roles | Verification flow |
-| MEE6 | Leveling, moderation | Verification |
-| Any existing logging bot | General logging | Member lifecycle (custom bot handles this now) |
-
-The custom verification bot and Carl-bot can coexist without conflict. Carl-bot handles community roles; custom bot handles the verification pipeline.
-
----
-
-## Summary of Wins
-
-| Problem | Before | After |
-|---|---|---|
-| Joining friction | 3 channels + freeform intro + wait 24h | Guided 5-step DM flow, modal form |
-| Mod workload | Read intro, find roles, manually assign | One-click Approve/Reject on formatted card |
-| SFW/NSFW selection | Hidden in roles channel | Explicit step in verification flow |
-| Returning members | Full re-verification | Auto-verify in seconds |
-| Account switches | No mechanism | `/claim-old-account` + private thread |
-| Member tracking | None | Full join/leave/verify/rejoin history |
-
+- stateManager is in-memory — bot restart clears all in-progress verifications
+- guild config JSON is static — editable only via git push (Phase 6 fixes this)
+- No test suite yet
+- Single guild support only (multi-guild works but config files are per-guild manually)
